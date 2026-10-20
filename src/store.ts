@@ -36,6 +36,14 @@ export interface Push {
   device: string
 }
 
+export interface ExpenseItem {
+  id: string
+  label: string
+  amount: number
+  who: PersonId[]
+  custom?: boolean
+}
+
 export interface Peek {
   id: number
   who: PersonId
@@ -64,6 +72,10 @@ interface State {
   poll: Poll | null
   dinnerShares: Partial<Record<PersonId, number>> | null
   dinnerTotal: number
+  expenseItems: ExpenseItem[] | null
+  expensePeople: PersonId[]
+  expenseMode: 'new' | 'edit'
+  needsExpenseUpdate: boolean
   settleRequested: boolean
   paid: PersonId[]
   viewer: PersonId
@@ -85,7 +97,8 @@ interface State {
   vote: (who: PersonId, option: string) => void
   nudge: () => void
   closePoll: () => void
-  saveExpense: (shares: Partial<Record<PersonId, number>>, total: number) => void
+  saveExpense: (shares: Partial<Record<PersonId, number>>, total: number, items: ExpenseItem[]) => void
+  editExpense: () => void
   askSettle: () => void
   openPush: () => void
   pay: () => void
@@ -151,6 +164,10 @@ const initial = {
   poll: null as Poll | null,
   dinnerShares: null as Partial<Record<PersonId, number>> | null,
   dinnerTotal: DINNER_TOTAL,
+  expenseItems: null as ExpenseItem[] | null,
+  expensePeople: [] as PersonId[],
+  expenseMode: 'new' as 'new' | 'edit',
+  needsExpenseUpdate: false,
   settleRequested: false,
   paid: [] as PersonId[],
   viewer: ME as PersonId,
@@ -195,8 +212,10 @@ export const useTrip = create<State>((set, get) => ({
 
   addRen: () => {
     const scope = get().inviteTarget
-    set({ renAdded: true, renScope: scope, sheet: null, highlightDinner: scope === 'dinner' })
-    get().showToast(scope === 'dinner' ? 'Ren invited to the final dinner only' : 'Ren added to the trip')
+    // If the dinner bill already exists, Ren isn't on it yet: flag it so the app can prompt an update.
+    const late = !!get().dinnerShares
+    set({ renAdded: true, renScope: scope, sheet: null, highlightDinner: scope === 'dinner' && !late, needsExpenseUpdate: late })
+    get().showToast(late ? 'Ren added · he’s not on the dinner bill yet' : scope === 'dinner' ? 'Ren invited to the final dinner only' : 'Ren added to the trip', late ? 'neutral' : 'success')
   },
 
   sendPoll: (options) => {
@@ -253,10 +272,13 @@ export const useTrip = create<State>((set, get) => ({
     })
   },
 
-  saveExpense: (shares, total) => {
-    set({ dinnerShares: shares, dinnerTotal: total, sheet: null, hubTab: 'money', screen: 'hub', highlightDinner: false })
-    get().showToast('Dinner added · balances updated')
+  saveExpense: (shares, total, items) => {
+    const editing = get().expenseMode === 'edit'
+    set({ dinnerShares: shares, dinnerTotal: total, expenseItems: items, expensePeople: members(get()), needsExpenseUpdate: false, expenseMode: 'new', sheet: null, hubTab: 'money', screen: 'hub', highlightDinner: false })
+    get().showToast(editing ? 'Dinner updated · balances recalculated' : 'Dinner added · balances updated')
   },
+
+  editExpense: () => set({ expenseMode: 'edit', sheet: 'addExpense' }),
 
   askSettle: () => {
     set({ settleRequested: true })

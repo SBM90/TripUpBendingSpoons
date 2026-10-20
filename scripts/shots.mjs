@@ -8,6 +8,9 @@ const only = process.argv[2]
 
 const wine = { ari: 39, maya: 39, leo: 39, sam: 39, nic: 27, ren: 27 }
 const total = 210
+const crew5 = ['ari', 'maya', 'leo', 'sam', 'nic']
+const five = { ari: 44.4, maya: 44.4, leo: 44.4, sam: 44.4, nic: 32.4 }
+const items5 = [{ id: 'food', label: 'Food and soft drinks', amount: 162, who: crew5 }, { id: 'wine', label: 'Wine, 2 bottles', amount: 48, who: ['ari', 'maya', 'leo', 'sam'] }]
 const poll = (votes, status = 'live', winner) => ({
   question: 'Where should we eat tonight?',
   options: ['taberna', 'ramiro', 'timeout'],
@@ -40,6 +43,8 @@ const states = {
   '09-pay': { screen: 'hub', hubTab: 'money', dinnerAdded: true, renAdded: true, poll: poll(final, 'closed', 'taberna'), dinnerShares: wine, dinnerTotal: total, settleRequested: true, sheet: 'pay', viewer: 'nic' },
   '09b-nic-lock': { screen: 'nicLock', viewer: 'nic', dinnerAdded: true, renAdded: true, poll: poll(final, 'closed', 'taberna'), dinnerShares: wine, dinnerTotal: total, settleRequested: true, push: { title: 'TripUp · Lisbon', body: 'Ari asked everyone to settle. You owe €57.', device: 'Nic’s phone' } },
   '09c-peek': { screen: 'nicLock', viewer: 'nic', dinnerAdded: true, renAdded: true, peek: { id: 1, who: 'nic', title: 'Now you’re on Nic’s phone', body: 'Nic just got Ari’s request to settle up.' } },
+  '11-late-banner': { screen: 'hub', hubTab: 'money', dinnerAdded: true, renAdded: true, needsExpenseUpdate: true, poll: poll(final, 'closed', 'taberna'), dinnerShares: five, dinnerTotal: total, expenseItems: items5, expensePeople: crew5 },
+  '12-edit-expense': { screen: 'hub', hubTab: 'money', dinnerAdded: true, renAdded: true, needsExpenseUpdate: true, poll: poll(final, 'closed', 'taberna'), dinnerShares: five, dinnerTotal: total, expenseItems: items5, expensePeople: crew5, sheet: 'addExpense', expenseMode: 'edit' },
   '10-squared': { screen: 'squared', dinnerAdded: true, renAdded: true, poll: poll(final, 'closed', 'taberna'), dinnerShares: wine, dinnerTotal: total, settleRequested: true, paid: ['nic', 'leo', 'sam', 'ren'] },
 }
 

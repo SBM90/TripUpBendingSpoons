@@ -12,7 +12,6 @@ export default function NewPoll({ open }: { open: boolean }) {
   const count = useTrip((s) => members(s).length)
   const [picked, setPicked] = useState<string[]>(restaurants.map((r) => r.id))
   const [addToPlan, setAddToPlan] = useState(true)
-  const [anon, setAnon] = useState(false)
   const [editing, setEditing] = useState(false)
   const closeAfter = useTrip((s) => s.closeAfter)
   const setCloseAfter = useTrip((s) => s.setCloseAfter)
@@ -64,6 +63,7 @@ export default function NewPoll({ open }: { open: boolean }) {
         <Row
           lead={<Clock size={20} className="text-blue" />}
           title="Closes"
+          last={editing}
           sub={closeAfter === 'When all vote' ? 'When everyone has voted' : `In ${closeAfter} or when everyone votes`}
           trail={
             <button onClick={() => setEditing((v) => !v)} className="flex items-center gap-0.5 rounded-full bg-blue/10 px-3 py-1.5 text-foot font-semibold text-blue">
@@ -84,8 +84,7 @@ export default function NewPoll({ open }: { open: boolean }) {
             </motion.div>
           )}
         </AnimatePresence>
-        <Row title="Add winner to the event" trail={<Toggle on={addToPlan} onChange={setAddToPlan} />} />
-        <Row title="Anonymous votes" trail={<Toggle on={anon} onChange={setAnon} />} last />
+        <Row title="Add winner to the event" trail={<Toggle on={addToPlan} onChange={setAddToPlan} />} last />
       </Card>
     </Sheet>
   )

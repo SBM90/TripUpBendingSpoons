@@ -25,7 +25,7 @@ export default function Hub() {
       <div className="flex gap-2">
         <QuickAction icon={<CalendarPlus size={18} />} label="Event" primary={!s.dinnerAdded} onClick={() => (s.dinnerAdded ? s.showToast('This demo adds one event to tonight', 'neutral') : s.openSheet('addEvent'))} />
         <QuickAction icon={<Vote size={18} />} label="Poll" primary={s.dinnerAdded && !s.poll} onClick={() => (s.poll?.status === 'live' ? s.go('poll') : s.openSheet('newPoll'))} />
-        <QuickAction icon={<Receipt size={18} />} label="Expense" onClick={() => s.openSheet('addExpense')} />
+        <QuickAction icon={<Receipt size={18} />} label="Expense" onClick={() => (s.dinnerShares ? s.editExpense() : s.openSheet('addExpense'))} />
       </div>
     ) : s.hubTab === 'polls' ? (
       <Button onClick={() => (s.poll?.status === 'live' ? s.go('poll') : s.openSheet('newPoll'))}>
@@ -143,6 +143,22 @@ function IconButton({ children, label, onClick }: { children: ReactNode; label: 
   )
 }
 
+// Shown when someone was invited after the dinner bill was logged, so they're not on it yet.
+function LateGuestBanner() {
+  const s = useTrip()
+  if (!s.needsExpenseUpdate) return null
+  return (
+    <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} className="mt-4 flex items-center gap-3 rounded-2xl bg-orange/10 p-3.5">
+      <Avatar id="ren" size={32} ring={false} />
+      <div className="min-w-0 flex-1">
+        <div className="text-sub font-semibold">Ren isn’t on the dinner bill yet</div>
+        <div className="text-foot text-label-2">Add him to what he shared</div>
+      </div>
+      <button onClick={s.editExpense} className="rounded-full bg-orange px-3.5 py-2 text-foot font-semibold text-white">Update</button>
+    </motion.div>
+  )
+}
+
 function Time({ t }: { t: string }) {
   return <span className="w-11 text-sub font-semibold text-label-2">{t}</span>
 }
@@ -231,14 +247,14 @@ function DinnerCard() {
 
 function PlanTab() {
   const s = useTrip()
-  const b = balances(s)
 
   return (
     <div>
+      <LateGuestBanner />
       <SectionTitle>Tonight</SectionTitle>
       <Card>
-        <Row lead={<Time t="10:00" />} title="Belém Tower" sub="Done" right={<Check size={18} className="text-green" />} />
-        <Row lead={<Time t="15:00" />} title="LX Factory" sub="Done" right={<Check size={18} className="text-green" />} last />
+        <Row lead={<Time t="10:00" />} title={<span className="text-label-2">Belém Tower</span>} right={<Check size={18} className="text-green" />} />
+        <Row lead={<Time t="15:00" />} title={<span className="text-label-2">LX Factory</span>} right={<Check size={18} className="text-green" />} last />
       </Card>
 
       {s.dinnerAdded ? (
@@ -263,19 +279,9 @@ function PlanTab() {
         <Row lead={<Time t="23:30" />} title="Bairro Alto drinks" sub="Optional · 3 interested" last />
       </Card>
 
-      <Card className="mt-6" onClick={() => s.setTab('money')}>
-        <Row
-          title={b[ME] > 0.5 ? `You’re owed ${euro(b[ME])}` : 'You’re all even'}
-          sub={`${euro(SPENT_BEFORE_DINNER + (s.dinnerShares ? s.dinnerTotal : 0))} spent by the group`}
-          right={<span className="text-blue">Money ›</span>}
-          last
-        />
-      </Card>
-
       <SectionTitle>Tomorrow</SectionTitle>
       <Card>
-        <Row lead={<Time t="11:30" />} title="Check out · Casa Alfama" sub="Keys in the lockbox" />
-        <Row lead={<Time t="14:05" />} title="Flight home · TP 1350" sub="LIS → BER · Terminal 1" last />
+        <Row lead={<Time t="11:30" />} title="Check out, then fly home" sub="Flight TP 1350 at 14:05" last />
       </Card>
     </div>
   )
@@ -327,11 +333,9 @@ function MoneyTab() {
         <motion.div key={b[ME]} initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className={cx('text-large', b[ME] > 0.5 ? 'text-green' : 'text-label')}>
           {b[ME] > 0.5 ? euro(b[ME]) : 'All even'}
         </motion.div>
-        <div className="text-foot text-label-2">
-          Group spent {euro(SPENT_BEFORE_DINNER + (s.dinnerShares ? s.dinnerTotal : 0))}
-          {s.dinnerShares ? ` · dinner just added (€${s.dinnerTotal})` : ''}
-        </div>
+        <div className="text-foot text-label-2">Group spent {euro(SPENT_BEFORE_DINNER + (s.dinnerShares ? s.dinnerTotal : 0))}</div>
       </div>
+      <LateGuestBanner />
 
       {transfers.length > 0 && (
         <>
@@ -350,7 +354,7 @@ function MoneyTab() {
                     </div>
                   }
                   title={`${people[t.from].name} pays ${t.to === ME ? 'you' : people[t.to].name}`}
-                  sub={done ? 'Paid' : t.from === 'ren' ? 'Dinner guest · dinner share only' : s.settleRequested ? 'Requested' : undefined}
+                  sub={done ? 'Paid' : t.from === 'ren' && s.renScope === 'dinner' ? 'Dinner guest · dinner share only' : s.settleRequested ? 'Requested' : undefined}
                   right={<span className={cx('text-headline', done ? 'text-green' : 'text-label')}>{done ? '✓ ' : ''}€{t.amount}</span>}
                   last={i === transfers.length - 1}
                 />
@@ -360,20 +364,28 @@ function MoneyTab() {
         </>
       )}
 
-      <Card className="mt-3" onClick={() => setShowAll((v) => !v)}>
-        <Row title="Everyone’s balance" right={<span className="text-blue">{showAll ? 'Hide' : 'Show'}</span>} last={!showAll} />
-        {showAll &&
-          order.map((id, i) => (
+      <button onClick={() => setShowAll((v) => !v)} className="mt-2 px-1 text-foot font-semibold text-blue">
+        {showAll ? 'Hide everyone’s balance' : 'See everyone’s balance'}
+      </button>
+      {showAll && (
+        <Card className="mt-2">
+          {order.map((id, i) => (
             <Row key={id} lead={<Avatar id={id} size={28} />} title={people[id].name} right={<span className={b[id] >= 0 ? 'text-green' : 'text-red'}>{b[id] >= 0 ? '+' : '−'}{euro(b[id])}</span>} last={i === order.length - 1} />
           ))}
-      </Card>
+        </Card>
+      )}
 
-      <SectionTitle>Recent expenses</SectionTitle>
+      <SectionTitle>Expenses</SectionTitle>
       <Card>
-        {s.dinnerShares && <Row title="Dinner · Taberna da Rua" sub="Ari paid · split by item" right={`€${s.dinnerTotal}`} />}
-        <Row title="Groceries · Casa Alfama" sub="Maya paid · split 5 ways" right="€84" />
-        <Row title="Uber to LX Factory" sub="Maya paid · split 5 ways" right="€54" />
-        <Row title="Belém Tower tickets" sub="Leo paid · split 5 ways" right="€60" last />
+        {s.dinnerShares && (
+          <Row
+            title="Dinner · Taberna da Rua"
+            sub="Ari paid · split by item"
+            right={`€${s.dinnerTotal}`}
+            trail={<button onClick={s.editExpense} className="rounded-full bg-blue/10 px-2.5 py-1 text-foot font-semibold text-blue">Edit</button>}
+          />
+        )}
+        <Row title="3 earlier expenses" sub="Groceries, Uber, Belém tickets" right="€198" last />
       </Card>
     </div>
   )

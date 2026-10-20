@@ -1,9 +1,8 @@
 import { motion } from 'framer-motion'
-import { BedDouble, CalendarDays, Clock, Landmark, Plane, Users, Utensils } from 'lucide-react'
+import { BedDouble, CalendarDays, Landmark, Plane, Users, Utensils } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { CREW } from '../data'
 import { useTrip } from '../store'
-import { AvatarStack, Button, Card, Row, Segmented, Sheet, cx } from '../components/ui'
+import { Button, Segmented, Sheet, cx } from '../components/ui'
 
 const kinds = [
   { id: 'food', label: 'Food', icon: Utensils },
@@ -67,11 +66,11 @@ export default function AddEvent({ open }: { open: boolean }) {
         })}
       </div>
 
-      <Card className="mt-3">
-        <Row lead={<CalendarDays size={20} className="text-red" />} title="Day" right={days.find((d) => d.id === day)?.full ?? day} />
-        <Row lead={<Clock size={20} className="text-blue" />} title="Time" right={time} last />
-      </Card>
-      <div className="mt-2.5 flex flex-wrap gap-1.5">
+      <div className="mb-2 mt-4 flex items-center gap-1.5 text-headline">
+        <CalendarDays size={18} className="text-red" /> When
+        <span className="ml-auto text-sub font-normal text-label-2">{days.find((d) => d.id === day)?.full ?? day} · {time}</span>
+      </div>
+      <div className="flex flex-wrap gap-1.5">
         {days.map((d) => (
           <Chip key={d.id} on={day === d.id} onClick={() => setDay(d.id)}>
             {d.label}
@@ -102,10 +101,9 @@ export default function AddEvent({ open }: { open: boolean }) {
         }}
       />
 
-      <div className="mb-2 mt-4 text-headline">Who’s coming</div>
-      <Card>
-        <Row lead={<Users size={20} className="text-indigo" />} title="Everyone on the trip" sub="Invite guests to just this event after adding it" trail={<AvatarStack ids={CREW.slice(0, 3)} size={26} />} last />
-      </Card>
+      <div className="mt-4 flex items-center gap-2 text-foot text-label-2">
+        <Users size={16} className="text-indigo" /> Everyone on the trip is in. You can invite guests to just this event later.
+      </div>
     </Sheet>
   )
 }

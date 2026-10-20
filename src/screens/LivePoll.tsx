@@ -39,7 +39,7 @@ export default function LivePoll() {
         </span>
       </div>
 
-      {!closed && <div className="mt-3 text-foot text-label-2">{mine ? 'Tap another option to change your vote.' : 'Tap an option to vote. You can change it until the poll closes.'}</div>}
+      {!closed && !mine && <div className="mt-3 text-foot text-label-2">Tap an option to vote.</div>}
 
       <div className="mt-4 space-y-3">
         {counts.map((c) => {
@@ -102,11 +102,7 @@ export default function LivePoll() {
         )}
       </AnimatePresence>
 
-      <p className="mt-3 text-foot text-label-2">
-        {closed
-          ? `${restaurantById(poll.winner!).name} is now in tonight’s plan. Everyone got a notification.`
-          : 'Closes on its own when everyone has voted. The winner goes straight into tonight’s plan.'}
-      </p>
+      {closed && <p className="mt-3 text-foot text-label-2">{restaurantById(poll.winner!).name} is now in tonight’s plan. Everyone got a notification.</p>}
     </Screen>
   )
 }

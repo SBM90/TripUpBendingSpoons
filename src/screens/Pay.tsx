@@ -56,9 +56,6 @@ export default function Pay({ open }: { open: boolean }) {
         </Button>
       }
     >
-      <div className="mb-3 flex justify-center">
-        <span className="rounded-full bg-indigo/10 px-3 py-1 text-cap font-semibold text-indigo">Nic’s view</span>
-      </div>
       <div className="flex flex-col items-center">
         <div className="flex items-center gap-2">
           <Avatar id="ari" size={28} ring={false} />

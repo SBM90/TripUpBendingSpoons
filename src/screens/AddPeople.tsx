@@ -49,7 +49,7 @@ export default function AddPeople({ open }: { open: boolean }) {
           <div className="min-w-0 flex-1">
             <div className="text-cap font-semibold uppercase tracking-wide text-orange">{dinner ? 'Inviting to one event' : 'Event in this trip'}</div>
             <div className="text-headline">{winner ? restaurantById(winner).name : dinnerName}</div>
-            <div className="text-foot text-label-2">Tonight · {dinnerTime} · {winner ? restaurantById(winner).walk : 'place decided by poll'}</div>
+            <div className="text-foot text-label-2">Tonight · {dinnerTime}</div>
           </div>
         </div>
       )}
@@ -61,15 +61,8 @@ export default function AddPeople({ open }: { open: boolean }) {
       </div>
 
       <Card className="mt-3">
-        <Row lead={<Avatar id="ren" ring={false} />} title="Ren Okafor" sub="+351 912 448 210 · not on TripUp yet" trail={<Check on={picked} />} onClick={() => setPicked((v) => !v)} />
-        <Row
-          lead={<div className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-4 text-sub font-semibold">R</div>}
-          title="Rita Barros"
-          sub="On TripUp"
-          trail={<Check on={false} />}
-          onClick={() => toast('Only Ren is part of this scenario', 'neutral')}
-          last
-        />
+        <Row lead={<Avatar id="ren" ring={false} />} title="Ren Okafor" sub="+351 912 448 210 · not on TripUp yet" trail={<Check on={picked} />} onClick={() => setPicked((v) => !v)} last />
+
       </Card>
 
       <div className="mb-2 mt-5 text-headline">Invite Ren to</div>
@@ -81,18 +74,16 @@ export default function AddPeople({ open }: { open: boolean }) {
                 {dinnerName} only <span className="rounded-full bg-orange px-2 py-px text-cap font-semibold text-white">Recommended</span>
               </span>
             }
-            sub="Votes on the place, pays only the dinner items he had, can’t see the rest of the trip"
+            sub="Votes and pays only for this dinner"
             trail={<Check on={dinner} />}
             onClick={() => setScope('dinner')}
           />
         )}
-        <Row title="The whole group" sub="Joins Lisbon with the crew: every plan, poll and shared expense" trail={<Check on={!dinner} />} onClick={() => setScope('trip')} last />
+        <Row title="The whole group" sub="Sees every plan, poll and expense" trail={<Check on={!dinner} />} onClick={() => setScope('trip')} last />
       </Card>
 
-      <button onClick={() => toast('Invite link copied', 'neutral')} className="mt-4 flex w-full items-center gap-2 rounded-xl bg-gray-6 px-3.5 py-3 text-left">
-        <Link2 size={18} className="text-blue" />
-        <span className="flex-1 text-sub font-semibold text-blue">Share invite link</span>
-        <span className="text-foot text-label-2">No account needed</span>
+      <button onClick={() => toast('Invite link copied', 'neutral')} className="mt-3 flex items-center gap-1.5 px-1 text-foot font-semibold text-blue">
+        <Link2 size={15} /> Or share an invite link · no account needed
       </button>
     </Sheet>
   )
