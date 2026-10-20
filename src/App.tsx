@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import { Check, RotateCcw } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import AddEvent from './screens/AddEvent'
 import AddExpense from './screens/AddExpense'
 import AddPeople from './screens/AddPeople'
 import Home from './screens/Home'
@@ -124,6 +125,7 @@ function Phone() {
           {screen === 'squared' && <Squared />}
         </motion.div>
       </AnimatePresence>
+      <AddEvent open={sheet === 'addEvent'} />
       <AddPeople open={sheet === 'addPeople'} />
       <NewPoll open={sheet === 'newPoll'} />
       <AddExpense open={sheet === 'addExpense'} />
@@ -138,8 +140,9 @@ function ScenarioPanel() {
   const s = useTrip()
   const reset = useTrip((x) => x.reset)
   const steps = [
-    { label: 'Open the Lisbon trip', done: s.screen !== 'home' || !!s.poll || s.renAdded },
-    { label: 'Add Ren for the final dinner', done: s.renAdded },
+    { label: 'Open the Lisbon trip', done: s.screen !== 'home' || s.dinnerAdded },
+    { label: 'Add the final dinner to the plan', done: s.dinnerAdded },
+    { label: 'Invite Ren to the dinner only', done: s.renAdded },
     { label: 'Create a dinner poll', done: !!s.poll },
     { label: 'Poll closes, winner joins the plan', done: s.poll?.status === 'closed' },
     { label: 'Log the bill, skip wine for Nic and Ren', done: !!s.dinnerShares },

@@ -10,7 +10,8 @@ import {
 } from './data'
 
 export type Screen = 'home' | 'hub' | 'poll' | 'squared'
-export type Sheet = null | 'addPeople' | 'newPoll' | 'addExpense' | 'pay'
+export type Sheet = null | 'addEvent' | 'addPeople' | 'newPoll' | 'addExpense' | 'pay'
+export type InviteTarget = 'dinner' | 'trip'
 export type HubTab = 'plan' | 'polls' | 'money'
 
 export interface Poll {
@@ -45,7 +46,10 @@ interface State {
   screen: Screen
   sheet: Sheet
   hubTab: HubTab
+  dinnerAdded: boolean
   renAdded: boolean
+  renScope: InviteTarget
+  inviteTarget: InviteTarget
   poll: Poll | null
   dinnerShares: Partial<Record<PersonId, number>> | null
   settleRequested: boolean
@@ -59,6 +63,8 @@ interface State {
   openSheet: (sheet: Sheet) => void
   setTab: (tab: HubTab) => void
   showToast: (text: string, tone?: Toast['tone']) => void
+  addDinner: () => void
+  invite: (target: InviteTarget) => void
   addRen: () => void
   sendPoll: (options: string[]) => void
   vote: (who: PersonId, option: string) => void
@@ -119,7 +125,10 @@ const initial = {
   screen: 'home' as Screen,
   sheet: null as Sheet,
   hubTab: 'plan' as HubTab,
+  dinnerAdded: false,
   renAdded: false,
+  renScope: 'dinner' as InviteTarget,
+  inviteTarget: 'dinner' as InviteTarget,
   poll: null as Poll | null,
   dinnerShares: null as Partial<Record<PersonId, number>> | null,
   settleRequested: false,
@@ -144,13 +153,23 @@ export const useTrip = create<State>((set, get) => ({
     })
   },
 
+  addDinner: () => {
+    set({ dinnerAdded: true, sheet: null, highlightDinner: true })
+    get().showToast('Final dinner added to tonight')
+  },
+
+  invite: (inviteTarget) => set({ inviteTarget, sheet: 'addPeople' }),
+
   addRen: () => {
-    set({ renAdded: true, sheet: null })
-    get().showToast('Ren added to tonight’s dinner')
+    const scope = get().inviteTarget
+    set({ renAdded: true, renScope: scope, sheet: null, highlightDinner: scope === 'dinner' })
+    get().showToast(scope === 'dinner' ? 'Ren invited to the final dinner only' : 'Ren added to the trip')
   },
 
   sendPoll: (options) => {
     set({
+      dinnerAdded: true,
+      highlightDinner: false,
       poll: {
         question: 'Where should we eat tonight?',
         options,

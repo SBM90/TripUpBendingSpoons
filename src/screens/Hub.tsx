@@ -1,22 +1,31 @@
 import { AnimatePresence, motion } from 'framer-motion'
-import { ArrowRight, BarChart3, Check, MapPin, MoreHorizontal, Phone, Plus, Receipt, UserPlus, Vote } from 'lucide-react'
-import { useState } from 'react'
-import { ME, PersonId, SPENT_BEFORE_DINNER, DINNER_TOTAL, UNSIMPLIFIED_TRANSFERS, people, restaurantById } from '../data'
+import { ArrowRight, BarChart3, CalendarPlus, Check, ChevronLeft, MapPin, MoreHorizontal, Phone, Plus, Receipt, UserPlus, Utensils, Vote } from 'lucide-react'
+import { ReactNode, useRef, useState } from 'react'
+import { CREW, ME, PersonId, SPENT_BEFORE_DINNER, DINNER_TOTAL, UNSIMPLIFIED_TRANSFERS, people, restaurantById } from '../data'
 import { HubTab, balances, members, simplify, useTrip } from '../store'
 import { Avatar, AvatarStack, Button, Card, Chip, NavBar, Row, Screen, SectionTitle, Segmented, cx } from '../components/ui'
 
 const euro = (n: number) => `€${Math.abs(Math.round(n)).toLocaleString('en-US')}`
+const TABS: HubTab[] = ['plan', 'polls', 'money']
 
 export default function Hub() {
   const s = useTrip()
-  const crew = members(s)
+  const [scrolled, setScrolled] = useState(false)
+  // Direction of the last tab change: 1 = moving right, -1 = moving left.
+  const prevTab = useRef(s.hubTab)
+  const dir = useRef(1)
+  if (prevTab.current !== s.hubTab) {
+    dir.current = TABS.indexOf(s.hubTab) > TABS.indexOf(prevTab.current) ? 1 : -1
+    prevTab.current = s.hubTab
+  }
+  const guest = s.renAdded && s.renScope === 'dinner'
 
   const bottom =
     s.hubTab === 'plan' ? (
       <div className="flex gap-2">
-        <QuickAction icon={<Vote size={18} />} label="Poll" primary onClick={() => (s.poll?.status === 'live' ? s.go('poll') : s.openSheet('newPoll'))} />
+        <QuickAction icon={<CalendarPlus size={18} />} label="Event" primary={!s.dinnerAdded} onClick={() => (s.dinnerAdded ? s.showToast('Tonight’s plan is set', 'neutral') : s.openSheet('addEvent'))} />
+        <QuickAction icon={<Vote size={18} />} label="Poll" primary={s.dinnerAdded && !s.poll} onClick={() => (s.poll?.status === 'live' ? s.go('poll') : s.openSheet('newPoll'))} />
         <QuickAction icon={<Receipt size={18} />} label="Expense" onClick={() => s.openSheet('addExpense')} />
-        <QuickAction icon={<UserPlus size={18} />} label="Invite" onClick={() => s.openSheet('addPeople')} />
       </div>
     ) : s.hubTab === 'polls' ? (
       <Button onClick={() => (s.poll?.status === 'live' ? s.go('poll') : s.openSheet('newPoll'))}>
@@ -33,20 +42,41 @@ export default function Hub() {
     )
 
   return (
-    <Screen bottom={bottom}>
+    <Screen bottom={bottom} onScroll={(top) => setScrolled(top > 96)}>
       <NavBar back="Trips" onBack={() => s.go('home')} right={<MoreHorizontal className="text-blue" />} />
       <h1 className="text-large">Lisbon</h1>
       <div className="text-sub text-label-2">Sat 18 Oct · Day 4 of 4 · last night</div>
 
       <div className="mt-3 flex items-center gap-2.5">
-        <AvatarStack ids={crew} />
-        <motion.button whileTap={{ scale: 0.9 }} onClick={() => s.openSheet('addPeople')} className="flex h-9 w-9 items-center justify-center rounded-full bg-fill3 text-blue" aria-label="Add people">
+        <AvatarStack ids={s.renAdded && !guest ? [...CREW, 'ren'] : CREW} />
+        {guest && (
+          <div className="flex items-center gap-1.5 border-l border-sep pl-2.5">
+            <div className="rounded-full border-[1.5px] border-dashed border-orange p-[2px]">
+              <Avatar id="ren" size={28} ring={false} />
+            </div>
+            <span className="text-cap font-semibold leading-tight text-orange">Dinner<br />guest</span>
+          </div>
+        )}
+        <motion.button whileTap={{ scale: 0.9 }} onClick={() => s.invite('trip')} className="flex h-9 w-9 items-center justify-center rounded-full bg-fill3 text-blue" aria-label="Add people to the trip">
           <Plus size={20} strokeWidth={2.5} />
         </motion.button>
-        <span className="text-foot text-label-2">{crew.length} going{s.renAdded ? ' · Ren as guest' : ''}</span>
+        {!guest && <span className="text-foot text-label-2">{members(s).length} travellers</span>}
       </div>
 
-      <div className="mt-4">
+      {/* Sticky tab header: stays under the status bar while the page scrolls. */}
+      <div className={cx('sticky z-20 -mx-5 mt-3 px-5 pb-2.5 pt-2 transition-colors', scrolled && 'border-b border-black/5 bg-white/95 backdrop-blur')} style={{ top: 'var(--safe-top)' }}>
+        {scrolled && <div className="absolute inset-x-0 bottom-full h-16 bg-white/95" />}
+        <AnimatePresence initial={false}>
+          {scrolled && (
+            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 36, opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="flex items-center overflow-hidden">
+              <button onClick={() => s.go('home')} className="-ml-1.5 text-blue" aria-label="Back to trips">
+                <ChevronLeft size={26} />
+              </button>
+              <span className="flex-1 text-center text-headline">Lisbon</span>
+              <span className="w-6" />
+            </motion.div>
+          )}
+        </AnimatePresence>
         <Segmented<HubTab>
           items={[
             { id: 'plan', label: 'Plan' },
@@ -58,29 +88,43 @@ export default function Hub() {
         />
       </div>
 
-      <AnimatePresence mode="wait" initial={false}>
-        <motion.div key={s.hubTab} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.15 }}>
-          {s.hubTab === 'plan' && <PlanTab />}
-          {s.hubTab === 'polls' && <PollsTab />}
-          {s.hubTab === 'money' && <MoneyTab />}
-        </motion.div>
-      </AnimatePresence>
+      <div className="relative -mx-5 overflow-x-clip px-5">
+        <AnimatePresence mode="popLayout" initial={false} custom={dir.current}>
+          <motion.div
+            key={s.hubTab}
+            custom={dir.current}
+            variants={{
+              enter: (d: number) => ({ x: `${d * 100}%`, opacity: 0 }),
+              center: { x: 0, opacity: 1 },
+              exit: (d: number) => ({ x: `${d * -100}%`, opacity: 0 }),
+            }}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            transition={{ type: 'spring', stiffness: 420, damping: 42 }}
+          >
+            {s.hubTab === 'plan' && <PlanTab />}
+            {s.hubTab === 'polls' && <PollsTab />}
+            {s.hubTab === 'money' && <MoneyTab />}
+          </motion.div>
+        </AnimatePresence>
+      </div>
     </Screen>
   )
 }
 
-function QuickAction({ icon, label, onClick, primary }: { icon: React.ReactNode; label: string; onClick: () => void; primary?: boolean }) {
+function QuickAction({ icon, label, onClick, primary }: { icon: ReactNode; label: string; onClick: () => void; primary?: boolean }) {
   return (
-    <motion.button whileTap={{ scale: 0.95 }} onClick={onClick} className={cx('flex h-[54px] flex-1 items-center justify-center gap-1.5 rounded-full text-headline shadow-sm', primary ? 'bg-label text-white' : 'bg-gray-6/95 text-label backdrop-blur')}>
+    <motion.button whileTap={{ scale: 0.95 }} onClick={onClick} className={cx('flex h-[54px] flex-1 items-center justify-center gap-1.5 rounded-full text-headline shadow-sm transition-colors', primary ? 'bg-label text-white' : 'bg-gray-6/95 text-label backdrop-blur')}>
       {icon}
       {label}
     </motion.button>
   )
 }
 
-function IconButton({ children, label, onClick }: { children: React.ReactNode; label: string; onClick: () => void }) {
+function IconButton({ children, label, onClick }: { children: ReactNode; label: string; onClick: () => void }) {
   return (
-    <motion.button whileTap={{ scale: 0.92 }} onClick={onClick} aria-label={label} className="flex h-11 w-11 items-center justify-center rounded-full bg-fill3 text-blue">
+    <motion.button whileTap={{ scale: 0.92 }} onClick={onClick} aria-label={label} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-fill3 text-blue">
       {children}
     </motion.button>
   )
@@ -90,63 +134,62 @@ function Time({ t }: { t: string }) {
   return <span className="w-11 text-sub font-semibold text-label-2">{t}</span>
 }
 
-function PlanTab() {
+function DinnerCard() {
   const s = useTrip()
   const crew = members(s)
   const poll = s.poll
   const winner = poll?.winner ? restaurantById(poll.winner) : null
   const voted = poll ? Object.keys(poll.votes).length : 0
-  const b = balances(s)
+  const guest = s.renAdded && s.renScope === 'dinner'
 
   return (
-    <div>
-      <SectionTitle>Tonight</SectionTitle>
-      <Card>
-        <Row lead={<Time t="10:00" />} title="Belém Tower" sub="Done" right={<Check size={18} className="text-green" />} />
-        <Row lead={<Time t="15:00" />} title="LX Factory" sub="Done" right={<Check size={18} className="text-green" />} last={!!winner} />
-        {!winner && (
-          <>
-            <Row lead={<Time t="21:00" />} title="Dinner" sub={poll ? `Poll live · ${voted} of ${crew.length} voted` : 'Not decided yet'} last />
-            <motion.button
-              whileTap={{ scale: 0.98 }}
-              onClick={() => (poll ? s.go('poll') : s.openSheet('newPoll'))}
-              className="mb-3 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-blue py-2.5 text-sub font-semibold text-blue"
-            >
-              {poll ? (
-                <>
-                  <BarChart3 size={17} /> See live results
-                </>
-              ) : (
-                <>
-                  <Vote size={17} /> Start a poll for dinner
-                </>
-              )}
-            </motion.button>
-          </>
+    <motion.div
+      layout
+      initial={s.highlightDinner ? { scale: 0.95, opacity: 0 } : false}
+      animate={{ scale: 1, opacity: 1 }}
+      transition={{ type: 'spring', stiffness: 260, damping: 22 }}
+      className={cx('mt-3 rounded-2xl p-4', s.highlightDinner ? 'bg-white ring-2 ring-blue' : 'bg-gray-6')}
+    >
+      <div className="flex items-center gap-2">
+        <span className="text-sub font-semibold text-blue">21:00</span>
+        {winner ? (
+          s.dinnerShares ? <Chip tone="green">Paid · €{DINNER_TOTAL}</Chip> : s.highlightDinner && <Chip tone="blue">Just decided</Chip>
+        ) : poll ? (
+          <Chip tone="red">● Poll live</Chip>
+        ) : (
+          <Chip>Place not decided</Chip>
         )}
-      </Card>
+      </div>
 
-      {winner && (
-        <motion.div
-          initial={s.highlightDinner ? { scale: 0.96, opacity: 0 } : false}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ type: 'spring', stiffness: 260, damping: 20, delay: 0.15 }}
-          className={cx('mt-3 rounded-2xl p-4', s.highlightDinner ? 'bg-white ring-2 ring-blue' : 'bg-gray-6')}
-        >
-          <div className="flex items-center gap-2">
-            <span className="text-sub font-semibold text-blue">21:00</span>
-            {s.highlightDinner && <Chip tone="blue">Just added</Chip>}
-            {s.dinnerShares && <Chip tone="green">Paid · €{DINNER_TOTAL}</Chip>}
-          </div>
-          <div className="mt-1.5 text-title3">{winner.name}</div>
-          <div className="text-foot text-label-2">
-            {winner.vibe} · {winner.address} · {winner.walk}
-          </div>
-          <div className="mt-3 flex items-center gap-2">
-            <AvatarStack ids={crew} size={30} />
-            <span className="text-foot text-label-2">{crew.length}{s.renAdded ? ' · Ren as guest' : ''}</span>
-          </div>
-          <div className="mt-3.5 flex items-center gap-2">
+      <div className="mt-2 flex items-center gap-3">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-white" style={{ background: winner?.tint ?? '#ff8d28' }}>
+          <Utensils size={19} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="text-title3">{winner ? winner.name : 'Final dinner'}</div>
+          <div className="text-foot text-label-2">{winner ? `${winner.vibe} · ${winner.walk}` : poll ? `${voted} of ${crew.length} voted on the place` : 'Where to eat: let the group vote'}</div>
+        </div>
+      </div>
+
+      <div className="mt-3 flex items-center gap-2">
+        <AvatarStack ids={CREW} size={28} />
+        {guest ? (
+          <span className="flex items-center gap-1.5 rounded-full bg-orange/10 py-0.5 pl-0.5 pr-2.5">
+            <Avatar id="ren" size={24} ring={false} />
+            <span className="text-cap font-semibold text-orange">Ren · dinner only</span>
+          </span>
+        ) : (
+          !s.renAdded && (
+            <button onClick={() => s.invite('dinner')} className="flex items-center gap-1 rounded-full border border-dashed border-blue px-2.5 py-1 text-cap font-semibold text-blue">
+              <UserPlus size={13} /> Invite a guest
+            </button>
+          )
+        )}
+      </div>
+
+      <div className="mt-3.5 flex items-center gap-2">
+        {winner ? (
+          <>
             <motion.button
               whileTap={{ scale: 0.97 }}
               onClick={() => (s.dinnerShares ? s.setTab('money') : s.openSheet('addExpense'))}
@@ -156,8 +199,51 @@ function PlanTab() {
             </motion.button>
             <IconButton label="Directions" onClick={() => s.showToast('Opens Maps in the real app', 'neutral')}><MapPin size={19} /></IconButton>
             <IconButton label="Call" onClick={() => s.showToast('Calls the restaurant in the real app', 'neutral')}><Phone size={18} /></IconButton>
+          </>
+        ) : (
+          <>
+            <motion.button
+              whileTap={{ scale: 0.97 }}
+              onClick={() => (poll ? s.go('poll') : s.openSheet('newPoll'))}
+              className="flex h-11 flex-1 items-center justify-center gap-1.5 rounded-full bg-blue text-sub font-semibold text-white"
+            >
+              {poll ? <BarChart3 size={17} /> : <Vote size={17} />} {poll ? 'See live results' : 'Start a poll for the place'}
+            </motion.button>
+          </>
+        )}
+      </div>
+    </motion.div>
+  )
+}
+
+function PlanTab() {
+  const s = useTrip()
+  const b = balances(s)
+
+  return (
+    <div>
+      <SectionTitle>Tonight</SectionTitle>
+      <Card>
+        <Row lead={<Time t="10:00" />} title="Belém Tower" sub="Done" right={<Check size={18} className="text-green" />} />
+        <Row lead={<Time t="15:00" />} title="LX Factory" sub="Done" right={<Check size={18} className="text-green" />} last />
+      </Card>
+
+      {s.dinnerAdded ? (
+        <DinnerCard />
+      ) : (
+        <motion.button
+          whileTap={{ scale: 0.98 }}
+          onClick={() => s.openSheet('addEvent')}
+          className="mt-3 flex w-full items-center gap-3 rounded-2xl border-[1.5px] border-dashed border-blue/60 p-4 text-left"
+        >
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue/10 text-blue">
+            <CalendarPlus size={20} />
           </div>
-        </motion.div>
+          <div className="flex-1">
+            <div className="text-headline text-blue">Add the final dinner</div>
+            <div className="text-foot text-label-2">Nothing planned after 15:00 yet</div>
+          </div>
+        </motion.button>
       )}
 
       <Card className="mt-3">
@@ -171,6 +257,12 @@ function PlanTab() {
           right={<span className="text-blue">Money ›</span>}
           last
         />
+      </Card>
+
+      <SectionTitle>Tomorrow</SectionTitle>
+      <Card>
+        <Row lead={<Time t="11:30" />} title="Check out · Casa Alfama" sub="Keys in the lockbox" />
+        <Row lead={<Time t="14:05" />} title="Flight home · TP 1350" sub="LIS → BER · Terminal 1" last />
       </Card>
     </div>
   )
@@ -190,9 +282,7 @@ function PollsTab() {
             {poll.status === 'live' ? <Chip tone="red">● Live</Chip> : <Chip>Closed</Chip>}
           </div>
           <div className="mt-1 text-foot text-label-2">
-            {poll.status === 'live'
-              ? `${Object.keys(poll.votes).length} of ${crew.length} voted`
-              : `${restaurantById(poll.winner!).name} won · added to the plan`}
+            {poll.status === 'live' ? `${Object.keys(poll.votes).length} of ${crew.length} voted` : `${restaurantById(poll.winner!).name} won · added to the plan`}
           </div>
         </Card>
       ) : (
@@ -247,7 +337,7 @@ function MoneyTab() {
                     </div>
                   }
                   title={`${people[t.from].name} pays ${t.to === ME ? 'you' : people[t.to].name}`}
-                  sub={done ? 'Paid' : s.settleRequested ? 'Requested' : undefined}
+                  sub={done ? 'Paid' : t.from === 'ren' ? 'Dinner guest · dinner share only' : s.settleRequested ? 'Requested' : undefined}
                   right={<span className={cx('text-headline', done ? 'text-green' : 'text-label')}>{done ? '✓ ' : ''}€{t.amount}</span>}
                   last={i === transfers.length - 1}
                 />

@@ -12,7 +12,8 @@ export default function Home() {
   const renAdded = useTrip((s) => s.renAdded)
   const reset = useTrip((s) => s.reset)
 
-  const pending = poll?.status === 'live' ? 'Dinner poll is live · tap to vote' : poll?.winner ? 'Tonight: dinner is booked' : 'Tonight: dinner not decided yet'
+  const dinnerAdded = useTrip((s) => s.dinnerAdded)
+  const pending = poll?.status === 'live' ? 'Dinner poll is live · tap to vote' : poll?.winner ? 'Tonight: dinner is booked' : dinnerAdded ? 'Tonight: pick where to eat' : 'Tonight: nothing planned for dinner'
 
   return (
     <Screen
@@ -37,9 +38,9 @@ export default function Home() {
         </div>
         <div className="space-y-1.5 p-4">
           <div className="text-title3">Lisbon with the crew</div>
-          <div className="text-sub text-label-2">15–18 Oct · {renAdded ? '5 friends + Ren' : '5 friends'} · Casa Alfama</div>
+          <div className="text-sub text-label-2">15–18 Oct · {renAdded ? '5 friends + 1 dinner guest' : '5 friends'} · Casa Alfama</div>
           <div className="pt-1">
-            <AvatarStack ids={renAdded ? [...CREW, 'ren'] : CREW} />
+            <AvatarStack ids={CREW} />
           </div>
           <div className="mt-2 flex items-center rounded-xl bg-white px-3 py-2.5">
             <span className="flex-1 text-foot font-semibold">{pending}</span>

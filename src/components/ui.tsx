@@ -194,12 +194,17 @@ export function Sheet({ open, onClose, title, children, footer, top = 58 }: { op
 }
 
 // A full-height screen: scrolling content plus an optional bar pinned above the home indicator.
-export function Screen({ children, bottom, pad = 'pb-36' }: { children: ReactNode; bottom?: ReactNode; pad?: string }) {
+export function Screen({ children, bottom, pad = 'pb-36', onScroll }: { children: ReactNode; bottom?: ReactNode; pad?: string; onScroll?: (top: number) => void }) {
   return (
     <div className="absolute inset-0">
-      <div className={cx('no-scrollbar absolute inset-0 overflow-y-auto px-5', pad)} style={{ paddingTop: 'calc(var(--safe-top) + 4px)' }}>
+      <div
+        className={cx('no-scrollbar absolute inset-0 overflow-y-auto px-5', pad)}
+        style={{ paddingTop: 'calc(var(--safe-top) + 4px)' }}
+        onScroll={onScroll ? (e) => onScroll(e.currentTarget.scrollTop) : undefined}
+      >
         {children}
       </div>
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-30 bg-white/90 backdrop-blur" style={{ height: 'var(--safe-top)' }} />
       {bottom && (
         <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 bg-gradient-to-t from-white from-60% to-white/0 px-6 pt-10" style={{ paddingBottom: 'calc(var(--safe-bottom) + 6px)' }}>
           <div className="pointer-events-auto">{bottom}</div>

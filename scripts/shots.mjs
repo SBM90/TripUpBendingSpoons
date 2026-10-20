@@ -22,17 +22,21 @@ const final = { ...live, ari: 'taberna', nic: 'timeout', ren: 'taberna' }
 const states = {
   '01-home': {},
   '02-hub': { screen: 'hub' },
-  '03-add-people': { screen: 'hub', sheet: 'addPeople' },
-  '04-new-poll': { screen: 'hub', renAdded: true, sheet: 'newPoll' },
-  '05-live-poll': { screen: 'poll', renAdded: true, poll: poll(live) },
-  '05b-live-voted': { screen: 'poll', renAdded: true, poll: poll({ ...live, ari: 'taberna' }) },
-  '06-plan-updated': { screen: 'hub', renAdded: true, poll: poll(final, 'closed', 'taberna'), highlightDinner: true, toast: { id: 1, text: 'Taberna da Rua won · added to tonight', tone: 'success' } },
-  '06b-polls-tab': { screen: 'hub', hubTab: 'polls', renAdded: true, poll: poll(final, 'closed', 'taberna') },
-  '07-add-expense': { screen: 'hub', renAdded: true, poll: poll(final, 'closed', 'taberna'), sheet: 'addExpense', after: 'wine' },
-  '08-money': { screen: 'hub', hubTab: 'money', renAdded: true, poll: poll(final, 'closed', 'taberna'), dinnerShares: wine },
-  '08b-push': { screen: 'hub', hubTab: 'money', renAdded: true, poll: poll(final, 'closed', 'taberna'), dinnerShares: wine, settleRequested: true, push: { title: 'TripUp · Lisbon', body: 'Ari asked everyone to settle. You owe €57.', device: 'On Nic’s phone' } },
-  '09-pay': { screen: 'hub', hubTab: 'money', renAdded: true, poll: poll(final, 'closed', 'taberna'), dinnerShares: wine, settleRequested: true, sheet: 'pay', viewer: 'nic' },
-  '10-squared': { screen: 'squared', renAdded: true, poll: poll(final, 'closed', 'taberna'), dinnerShares: wine, settleRequested: true, paid: ['nic', 'leo', 'sam', 'ren'] },
+  '02b-add-event': { screen: 'hub', sheet: 'addEvent' },
+  '02c-dinner-added': { screen: 'hub', dinnerAdded: true, highlightDinner: true },
+  '03-add-people': { screen: 'hub', dinnerAdded: true, sheet: 'addPeople', inviteTarget: 'dinner' },
+  '03b-ren-invited': { screen: 'hub', dinnerAdded: true, renAdded: true, highlightDinner: true },
+  '03c-scrolled': { screen: 'hub', dinnerAdded: true, renAdded: true, after: 'scroll' },
+  '04-new-poll': { screen: 'hub', dinnerAdded: true, renAdded: true, sheet: 'newPoll' },
+  '05-live-poll': { screen: 'poll', dinnerAdded: true, renAdded: true, poll: poll(live) },
+  '05b-live-voted': { screen: 'poll', dinnerAdded: true, renAdded: true, poll: poll({ ...live, ari: 'taberna' }) },
+  '06-plan-updated': { screen: 'hub', dinnerAdded: true, renAdded: true, poll: poll(final, 'closed', 'taberna'), highlightDinner: true, toast: { id: 1, text: 'Taberna da Rua won · added to tonight', tone: 'success' } },
+  '06b-polls-tab': { screen: 'hub', hubTab: 'polls', dinnerAdded: true, renAdded: true, poll: poll(final, 'closed', 'taberna') },
+  '07-add-expense': { screen: 'hub', dinnerAdded: true, renAdded: true, poll: poll(final, 'closed', 'taberna'), sheet: 'addExpense', after: 'wine' },
+  '08-money': { screen: 'hub', hubTab: 'money', dinnerAdded: true, renAdded: true, poll: poll(final, 'closed', 'taberna'), dinnerShares: wine },
+  '08b-push': { screen: 'hub', hubTab: 'money', dinnerAdded: true, renAdded: true, poll: poll(final, 'closed', 'taberna'), dinnerShares: wine, settleRequested: true, push: { title: 'TripUp · Lisbon', body: 'Ari asked everyone to settle. You owe €57.', device: 'On Nic’s phone' } },
+  '09-pay': { screen: 'hub', hubTab: 'money', dinnerAdded: true, renAdded: true, poll: poll(final, 'closed', 'taberna'), dinnerShares: wine, settleRequested: true, sheet: 'pay', viewer: 'nic' },
+  '10-squared': { screen: 'squared', dinnerAdded: true, renAdded: true, poll: poll(final, 'closed', 'taberna'), dinnerShares: wine, settleRequested: true, paid: ['nic', 'leo', 'sam', 'ren'] },
 }
 
 const browser = await puppeteer.launch({ executablePath: CHROME, headless: true, args: ['--hide-scrollbars'] })
@@ -51,6 +55,10 @@ for (const [name, st] of Object.entries(states)) {
     window.trip.setState(s)
   }, state)
   await new Promise((r) => setTimeout(r, 900))
+  if (after === 'scroll') {
+    await page.evaluate(() => { const el = [...document.querySelectorAll('.overflow-y-auto')].at(-1); el.scrollTop = 420; el.dispatchEvent(new Event('scroll')) })
+    await new Promise((r) => setTimeout(r, 700))
+  }
   if (after === 'wine') {
     await page.evaluate(() => {
       const chips = (n) => [...document.querySelectorAll('[data-chip]')].filter((b) => b.dataset.chip === n)
