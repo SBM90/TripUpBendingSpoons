@@ -11,6 +11,7 @@ import Hub from './screens/Hub'
 import LivePoll from './screens/LivePoll'
 import NewPoll from './screens/NewPoll'
 import NicLock from './screens/NicLock'
+import NicApp from './screens/NicApp'
 import Pay from './screens/Pay'
 import Squared from './screens/Squared'
 import { useTrip } from './store'
@@ -117,16 +118,19 @@ function Phone() {
         <motion.div
           key={screen}
           className="absolute inset-0"
-          initial={{ x: screen === 'home' ? -60 : 80, opacity: 0 }}
-          animate={{ x: 0, opacity: 1 }}
-          exit={{ x: screen === 'home' ? 80 : -60, opacity: 0 }}
+          // Opening an app from a notification zooms in like iOS; everything else slides.
+          initial={screen === 'nicApp' ? { scale: 0.86, opacity: 0, borderRadius: 40 } : { x: screen === 'home' ? -60 : 80, opacity: 0 }}
+          animate={{ x: 0, scale: 1, opacity: 1, borderRadius: 0 }}
+          exit={screen === 'nicLock' ? { scale: 1.08, opacity: 0 } : { x: screen === 'home' ? 80 : -60, opacity: 0 }}
           transition={{ type: 'spring', stiffness: 380, damping: 38 }}
+          style={{ overflow: 'hidden' }}
         >
           {screen === 'home' && <Home />}
           {screen === 'hub' && <Hub />}
           {screen === 'poll' && <LivePoll />}
           {screen === 'squared' && <Squared />}
           {screen === 'nicLock' && <NicLock />}
+          {screen === 'nicApp' && <NicApp />}
         </motion.div>
       </AnimatePresence>
       <AddEvent open={sheet === 'addEvent'} />
@@ -144,12 +148,15 @@ function Phone() {
 // Shows whose phone the prototype is currently showing, whenever it isn't Ari's.
 function ViewerPill() {
   const viewer = useTrip((s) => s.viewer)
+  const paid = useTrip((s) => s.paid.includes('nic'))
   if (viewer === 'ari') return null
+  const back = () => useTrip.getState().switchPhone('ari', { sheet: null, screen: 'hub', hubTab: 'money' }, 'Back on Ari’s phone', paid ? 'Nic has paid.' : 'Nic hasn’t paid yet.')
   return (
     <div className="pointer-events-none absolute inset-x-0 z-[65] flex justify-center" style={{ top: 'calc(var(--safe-top) + 2px)' }}>
-      <div className="flex items-center gap-1.5 rounded-full bg-indigo py-1 pl-1 pr-3 text-cap font-semibold text-white shadow-lg">
+      <div className="pointer-events-auto flex items-center gap-1.5 rounded-full bg-indigo py-1 pl-1 pr-1 text-cap font-semibold text-white shadow-lg">
         <Avatar id={viewer} size={20} ring={false} />
         {people[viewer].name}’s phone
+        <button onClick={back} className="ml-1 rounded-full bg-white/20 px-2 py-0.5">Back to Ari</button>
       </div>
     </div>
   )

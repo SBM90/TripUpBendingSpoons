@@ -173,11 +173,9 @@ function DinnerCard() {
 
   return (
     <motion.div
-      layout
-      initial={s.highlightDinner ? { scale: 0.95, opacity: 0 } : false}
-      animate={{ scale: 1, opacity: 1 }}
-      transition={{ type: 'spring', stiffness: 260, damping: 22 }}
-      className={cx('mt-3 rounded-2xl p-4', s.highlightDinner ? 'bg-white ring-2 ring-blue' : 'bg-gray-6')}
+      layoutId="new-event"
+      transition={{ type: 'spring', stiffness: 260, damping: 26 }}
+      className={cx('rounded-2xl p-4', s.highlightDinner ? 'bg-white ring-2 ring-blue' : 'bg-gray-6')}
     >
       <div className="flex items-center gap-2">
         <span className="text-sub font-semibold text-blue">{s.dinnerDay === 'Tonight' ? s.dinnerTime : `${s.dinnerDay} · ${s.dinnerTime}`}</span>
@@ -245,44 +243,77 @@ function DinnerCard() {
   )
 }
 
+// Fixed events for the trip; the dinner joins them at whatever time Ari picks.
+const TONIGHT = [
+  { id: 'belem', time: '10:00', title: 'Belém Tower', done: true },
+  { id: 'lx', time: '15:00', title: 'LX Factory', done: true },
+  { id: 'bairro', time: '23:30', title: 'Bairro Alto drinks', sub: 'Optional · 3 interested' },
+]
+const TOMORROW = [{ id: 'checkout', time: '11:30', title: 'Check out, then fly home', sub: 'Flight TP 1350 at 14:05' }]
+
+type PlanItem = { id: string; time: string; title?: string; sub?: string; done?: boolean }
+
+function EventRow({ e }: { e: PlanItem }) {
+  return (
+    <div className="flex items-center gap-3 rounded-2xl bg-gray-6 px-4 py-3">
+      <Time t={e.time} />
+      <div className="min-w-0 flex-1">
+        <div className={cx('text-body', e.done && 'text-label-2')}>{e.title}</div>
+        {e.sub && <div className="text-foot text-label-2">{e.sub}</div>}
+      </div>
+      {e.done && <Check size={18} className="text-green" />}
+    </div>
+  )
+}
+
+function AddEventSlot() {
+  const s = useTrip()
+  return (
+    <motion.button
+      layoutId="new-event"
+      whileTap={{ scale: 0.98 }}
+      onClick={() => s.openSheet('addEvent')}
+      className="flex w-full items-center gap-3 rounded-2xl border-[1.5px] border-dashed border-blue/60 px-4 py-3 text-left"
+    >
+      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue/10 text-blue">
+        <CalendarPlus size={18} />
+      </div>
+      <div className="flex-1">
+        <div className="text-headline text-blue">Add another event</div>
+        <div className="text-foot text-label-2">Pick a time and it slots into the day</div>
+      </div>
+    </motion.button>
+  )
+}
+
+function Day({ items, dinnerHere, showAdd }: { items: PlanItem[]; dinnerHere: boolean; showAdd: boolean }) {
+  const s = useTrip()
+  const list: PlanItem[] = dinnerHere ? [...items, { id: 'dinner', time: s.dinnerTime }] : items
+  const sorted = [...list].sort((a, b) => a.time.localeCompare(b.time))
+  return (
+    <div className="space-y-2">
+      {sorted.map((e) => (
+        <motion.div key={e.id} layout transition={{ type: 'spring', stiffness: 300, damping: 30 }}>
+          {e.id === 'dinner' ? <DinnerCard /> : <EventRow e={e} />}
+        </motion.div>
+      ))}
+      {showAdd && <AddEventSlot />}
+    </div>
+  )
+}
+
 function PlanTab() {
   const s = useTrip()
+  const tonight = s.dinnerAdded && s.dinnerDay === 'Tonight'
+  const tomorrow = s.dinnerAdded && s.dinnerDay === 'Tomorrow'
 
   return (
     <div>
       <LateGuestBanner />
       <SectionTitle>Tonight</SectionTitle>
-      <Card>
-        <Row lead={<Time t="10:00" />} title={<span className="text-label-2">Belém Tower</span>} right={<Check size={18} className="text-green" />} />
-        <Row lead={<Time t="15:00" />} title={<span className="text-label-2">LX Factory</span>} right={<Check size={18} className="text-green" />} last />
-      </Card>
-
-      {s.dinnerAdded ? (
-        <DinnerCard />
-      ) : (
-        <motion.button
-          whileTap={{ scale: 0.98 }}
-          onClick={() => s.openSheet('addEvent')}
-          className="mt-3 flex w-full items-center gap-3 rounded-2xl border-[1.5px] border-dashed border-blue/60 p-4 text-left"
-        >
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue/10 text-blue">
-            <CalendarPlus size={20} />
-          </div>
-          <div className="flex-1">
-            <div className="text-headline text-blue">Add another event</div>
-            <div className="text-foot text-label-2">Dinner, drinks, a day trip: anything the group plans</div>
-          </div>
-        </motion.button>
-      )}
-
-      <Card className="mt-3">
-        <Row lead={<Time t="23:30" />} title="Bairro Alto drinks" sub="Optional · 3 interested" last />
-      </Card>
-
+      <Day items={TONIGHT} dinnerHere={tonight} showAdd={!s.dinnerAdded} />
       <SectionTitle>Tomorrow</SectionTitle>
-      <Card>
-        <Row lead={<Time t="11:30" />} title="Check out, then fly home" sub="Flight TP 1350 at 14:05" last />
-      </Card>
+      <Day items={TOMORROW} dinnerHere={tomorrow} showAdd={false} />
     </div>
   )
 }

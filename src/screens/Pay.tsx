@@ -31,7 +31,7 @@ export default function Pay({ open }: { open: boolean }) {
     }, 1100)
   }
   const close = () => {
-    if (state === 'idle') useTrip.getState().switchPhone('ari', { sheet: null, screen: 'hub', hubTab: 'money' }, 'Back on Ari’s phone', 'Nic hasn’t paid yet.')
+    if (state === 'idle') useTrip.setState({ sheet: null })
   }
 
   return (

@@ -9,7 +9,7 @@ import {
   restaurantById,
 } from './data'
 
-export type Screen = 'home' | 'hub' | 'poll' | 'squared' | 'nicLock'
+export type Screen = 'home' | 'hub' | 'poll' | 'squared' | 'nicLock' | 'nicApp'
 export type Sheet = null | 'addEvent' | 'addPeople' | 'newPoll' | 'addExpense' | 'pay'
 export type InviteTarget = 'dinner' | 'trip'
 export type HubTab = 'plan' | 'polls' | 'money'
@@ -291,7 +291,13 @@ export const useTrip = create<State>((set, get) => ({
     later(2700, () => set({ push: { title: 'TripUp · Lisbon', body: `Ari asked everyone to settle. You owe €${nicOwes}.`, device: 'Nic’s phone' } }))
   },
 
-  openPush: () => set({ push: null, sheet: 'pay' }),
+  // Tapping the notification opens Nic's app first; the pay sheet follows a moment later.
+  openPush: () => {
+    set({ push: null, screen: 'nicApp', sheet: null })
+    later(750, () => {
+      if (get().screen === 'nicApp') set({ sheet: 'pay' })
+    })
+  },
 
   pay: () => {
     set({ paid: ['nic'] })

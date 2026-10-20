@@ -45,6 +45,8 @@ const states = {
   '09c-peek': { screen: 'nicLock', viewer: 'nic', dinnerAdded: true, renAdded: true, peek: { id: 1, who: 'nic', title: 'Now you’re on Nic’s phone', body: 'Nic just got Ari’s request to settle up.' } },
   '11-late-banner': { screen: 'hub', hubTab: 'money', dinnerAdded: true, renAdded: true, needsExpenseUpdate: true, poll: poll(final, 'closed', 'taberna'), dinnerShares: five, dinnerTotal: total, expenseItems: items5, expensePeople: crew5 },
   '12-edit-expense': { screen: 'hub', hubTab: 'money', dinnerAdded: true, renAdded: true, needsExpenseUpdate: true, poll: poll(final, 'closed', 'taberna'), dinnerShares: five, dinnerTotal: total, expenseItems: items5, expensePeople: crew5, sheet: 'addExpense', expenseMode: 'edit' },
+  '13-nic-app': { screen: 'nicApp', viewer: 'nic', dinnerAdded: true, renAdded: true, poll: poll(final, 'closed', 'taberna'), dinnerShares: wine, dinnerTotal: total, settleRequested: true },
+  '14-dinner-2030': { screen: 'hub', dinnerAdded: true, dinnerTime: '20:30', renAdded: true },
   '10-squared': { screen: 'squared', dinnerAdded: true, renAdded: true, poll: poll(final, 'closed', 'taberna'), dinnerShares: wine, dinnerTotal: total, settleRequested: true, paid: ['nic', 'leo', 'sam', 'ren'] },
 }
 
