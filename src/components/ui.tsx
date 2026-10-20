@@ -10,7 +10,7 @@ export function Avatar({ id, size = 36, ring = true }: { id: PersonId; size?: nu
   return (
     <div
       className={cx('flex shrink-0 items-center justify-center rounded-full font-semibold text-white', ring && 'ring-2 ring-white')}
-      style={{ width: size, height: size, background: p.color, fontSize: size * 0.36 }}
+      style={{ width: size, height: size, background: p.color, fontSize: Math.round(size * 0.42) }}
       aria-label={p.name}
     >
       {p.initials}
@@ -22,7 +22,7 @@ export function AvatarStack({ ids, size = 32 }: { ids: PersonId[]; size?: number
   return (
     <div className="flex">
       {ids.map((id, i) => (
-        <div key={id} style={{ marginLeft: i ? -8 : 0 }}>
+        <div key={id} style={{ marginLeft: i ? -Math.round(size * 0.22) : 0, zIndex: ids.length - i }} className="relative">
           <Avatar id={id} size={size} />
         </div>
       ))}
@@ -185,7 +185,7 @@ export function Sheet({ open, onClose, title, children, footer, top = 58 }: { op
               <div />
             </div>
             <div className="no-scrollbar flex-1 overflow-y-auto px-5 pb-4">{children}</div>
-            {footer && <div className="px-6 pb-[calc(var(--safe-bottom)+8px)] pt-2">{footer}</div>}
+            {footer && <div className="border-t border-black/5 bg-white px-6 pb-[calc(var(--safe-bottom)+8px)] pt-3">{footer}</div>}
           </motion.div>
         </>
       )}
@@ -201,8 +201,8 @@ export function Screen({ children, bottom, pad = 'pb-36' }: { children: ReactNod
         {children}
       </div>
       {bottom && (
-        <div className="absolute inset-x-0 z-20 px-6" style={{ bottom: 'calc(var(--safe-bottom) + 6px)' }}>
-          {bottom}
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 bg-gradient-to-t from-white from-60% to-white/0 px-6 pt-10" style={{ paddingBottom: 'calc(var(--safe-bottom) + 6px)' }}>
+          <div className="pointer-events-auto">{bottom}</div>
         </div>
       )}
     </div>

@@ -58,7 +58,7 @@ export default function Home() {
         <Row title="Berlin weekend" sub="Mar 2026 · all settled" right={<span className="text-green">✓</span>} last />
       </Card>
 
-      <button onClick={reset} className="mx-auto mt-8 block text-foot text-label-3 underline">Restart demo</button>
+      <button onClick={reset} className="mx-auto mt-8 block rounded-full bg-fill3 px-3.5 py-1.5 text-foot font-semibold text-label-2 active:opacity-60">Restart demo</button>
 
     </Screen>
   )

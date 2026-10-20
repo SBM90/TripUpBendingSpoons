@@ -1,6 +1,8 @@
 import { AnimatePresence, motion } from 'framer-motion'
-import { Check, Share } from 'lucide-react'
-import { ME, restaurantById } from '../data'
+import { Check, Share, Utensils } from 'lucide-react'
+import { ME, people, restaurantById } from '../data'
+
+const listNames = (n: string[]) => (n.length < 2 ? n.join('') : `${n.slice(0, -1).join(', ')} and ${n[n.length - 1]}`)
 import { members, tally, useTrip } from '../store'
 import { AvatarStack, Bar, Button, Chip, NavBar, Pill, Screen, cx } from '../components/ui'
 
@@ -35,7 +37,7 @@ export default function LivePoll() {
         </span>
       </div>
 
-      {!mine && !closed && <div className="mt-4 rounded-xl bg-blue/10 px-3.5 py-2.5 text-foot font-semibold text-blue">Tap an option to vote. You can change it until the poll closes.</div>}
+      {!closed && <div className="mt-3 text-foot text-label-2">{mine ? 'Tap another option to change your vote.' : 'Tap an option to vote. You can change it until the poll closes.'}</div>}
 
       <div className="mt-4 space-y-3">
         {counts.map((c) => {
@@ -50,25 +52,34 @@ export default function LivePoll() {
               onClick={() => !closed && s.vote(ME, c.id)}
               className={cx('block w-full rounded-2xl bg-gray-6 p-3.5 text-left ring-2 transition-shadow', isWinner || (!closed && leading) ? 'ring-blue' : 'ring-transparent')}
             >
-              <div className="flex items-center gap-2">
-                <span className="flex-1 text-headline">{r.name}</span>
-                {isWinner ? <Chip tone="blue">Winner</Chip> : !closed && leading && <Chip tone="blue">Leading</Chip>}
+              <div className="mb-3 flex items-center gap-3">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-white" style={{ background: r.tint }}>
+                  <Utensils size={19} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5">
+                    <span className="truncate text-headline">{r.name}</span>
+                    {isWinner ? <Chip tone="blue">Winner</Chip> : !closed && leading && <Chip tone="blue">Leading</Chip>}
+                  </div>
+                  <div className="text-foot text-label-2">
+                    {r.vibe} · {r.price} · {r.walk}
+                  </div>
+                </div>
+                {closed ? (
+                  <span className="text-headline">{c.voters.length}</span>
+                ) : (
+                  <span className={cx('flex h-6 w-6 shrink-0 items-center justify-center rounded-full', mine === c.id ? 'bg-blue text-white' : 'border-2 border-gray-3')}>
+                    {mine === c.id && <Check size={14} strokeWidth={3} />}
+                  </span>
+                )}
+              </div>
+              <Bar pct={total ? c.voters.length / crew.length : 0} color={leading || isWinner ? '#0088ff' : '#8e8e93'} />
+              <div className="mt-2.5 flex h-7 items-center gap-2">
+                {c.voters.length ? <AvatarStack ids={c.voters} size={26} /> : <span className="text-foot text-label-3">No votes yet</span>}
+                <span className="flex-1" />
                 <span className="text-foot font-semibold text-label-2">
                   {c.voters.length} {c.voters.length === 1 ? 'vote' : 'votes'}
                 </span>
-              </div>
-              <div className="mb-2.5 text-foot text-label-2">
-                {r.vibe} · {r.price} · {r.walk}
-              </div>
-              <Bar pct={total ? c.voters.length / crew.length : 0} color={leading || isWinner ? '#0088ff' : '#8e8e93'} />
-              <div className="mt-2.5 flex h-8 items-center">
-                {c.voters.length ? <AvatarStack ids={c.voters} size={28} /> : <span className="text-foot text-label-3">No votes yet</span>}
-                <span className="flex-1" />
-                {mine === c.id && (
-                  <span className="flex items-center gap-1 text-foot font-semibold text-blue">
-                    Your vote <Check size={14} strokeWidth={3} />
-                  </span>
-                )}
               </div>
             </motion.button>
           )
@@ -80,7 +91,7 @@ export default function LivePoll() {
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, height: 0 }} className="mt-3 flex items-center gap-2.5 rounded-2xl bg-gray-6 px-3.5 py-3">
             <AvatarStack ids={waiting} size={30} />
             <span className="flex-1 text-sub">
-              Waiting on {waiting.map((w) => (w === ME ? 'you' : w[0].toUpperCase() + w.slice(1))).join(' and ').replace(/ and (?=.* and )/g, ', ')}
+              Waiting on {listNames(waiting.map((w) => (w === ME ? 'you' : people[w].name)))}
             </span>
             {waiting.some((w) => w !== ME) && (
               <Pill onClick={() => { s.nudge(); s.showToast('Nudge sent', 'neutral') }}>{poll.nudged ? 'Nudged' : 'Nudge'}</Pill>

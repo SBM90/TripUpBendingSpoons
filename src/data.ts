@@ -12,12 +12,12 @@ export interface Person {
 }
 
 export const people: Record<PersonId, Person> = {
-  ari: { id: 'ari', name: 'Ari', initials: 'AR', color: '#6155f5' },
-  maya: { id: 'maya', name: 'Maya', initials: 'MA', color: '#ff8d28' },
-  leo: { id: 'leo', name: 'Leo', initials: 'LE', color: '#00c3d0' },
-  sam: { id: 'sam', name: 'Sam', initials: 'SA', color: '#34c759' },
-  nic: { id: 'nic', name: 'Nic', initials: 'NI', color: '#ff2d55' },
-  ren: { id: 'ren', name: 'Ren', initials: 'RO', color: '#ac7f5e' },
+  ari: { id: 'ari', name: 'Ari', initials: 'A', color: '#6155f5' },
+  maya: { id: 'maya', name: 'Maya', initials: 'M', color: '#ff8d28' },
+  leo: { id: 'leo', name: 'Leo', initials: 'L', color: '#00c3d0' },
+  sam: { id: 'sam', name: 'Sam', initials: 'S', color: '#34c759' },
+  nic: { id: 'nic', name: 'Nic', initials: 'N', color: '#ff2d55' },
+  ren: { id: 'ren', name: 'Ren', initials: 'R', color: '#ac7f5e' },
 }
 
 export const ME: PersonId = 'ari'

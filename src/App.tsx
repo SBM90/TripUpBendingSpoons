@@ -12,7 +12,7 @@ import Squared from './screens/Squared'
 import { useTrip } from './store'
 
 function useFramed() {
-  const q = '(min-width: 640px) and (min-height: 760px)'
+  const q = '(min-width: 640px) and (min-height: 600px)'
   const [framed, setFramed] = useState(() => window.matchMedia(q).matches)
   useEffect(() => {
     const m = window.matchMedia(q)
@@ -21,6 +21,19 @@ function useFramed() {
     return () => m.removeEventListener('change', on)
   }, [])
   return framed
+}
+
+// The phone is always 393x852 inside; only the presentation frame shrinks on short laptop screens.
+const FRAME_H = 852 + 22
+function useFrameScale() {
+  const calc = () => Math.min(1, (window.innerHeight - 40) / FRAME_H)
+  const [scale, setScale] = useState(calc)
+  useEffect(() => {
+    const on = () => setScale(calc())
+    window.addEventListener('resize', on)
+    return () => window.removeEventListener('resize', on)
+  }, [])
+  return scale
 }
 
 function StatusBar() {
@@ -40,7 +53,7 @@ function StatusBar() {
 function Toasts() {
   const toast = useTrip((s) => s.toast)
   return (
-    <div className="pointer-events-none absolute inset-x-0 z-[55] flex justify-center px-5" style={{ top: 'calc(var(--safe-top) + 4px)' }}>
+    <div className="pointer-events-none absolute inset-x-0 z-[55] flex justify-center px-5" style={{ top: 'calc(var(--safe-top) + 50px)' }}>
       <AnimatePresence>
         {toast && (
           <motion.div
@@ -161,6 +174,7 @@ function ScenarioPanel() {
 
 export default function App() {
   const framed = useFramed()
+  const scale = useFrameScale()
   if (!framed) {
     return (
       <div className="phone-full fixed inset-0">
@@ -169,14 +183,19 @@ export default function App() {
     )
   }
   return (
-    <div className="flex min-h-screen items-center justify-center gap-16 bg-[#e9e9ee] p-8">
+    <div className="flex h-screen items-center justify-center gap-16 overflow-hidden bg-[#e9e9ee] px-8">
       <ScenarioPanel />
-      <div className="phone-framed relative shrink-0 rounded-[64px] bg-[#1c1c1e] p-[11px] shadow-[0_30px_80px_rgba(0,0,0,0.25)]">
+      <div style={{ width: 415 * scale, height: FRAME_H * scale }} className="shrink-0">
+      <div
+        className="phone-framed relative w-[415px] origin-top-left rounded-[64px] bg-[#1c1c1e] p-[11px] shadow-[0_30px_80px_rgba(0,0,0,0.25)]"
+        style={{ transform: `scale(${scale})` }}
+      >
         <div className="relative h-[852px] w-[393px] overflow-hidden rounded-[54px]">
           <Phone />
           <StatusBar />
           <div className="pointer-events-none absolute bottom-2 left-1/2 z-[60] h-[5px] w-[139px] -translate-x-1/2 rounded-full bg-black" />
         </div>
+      </div>
       </div>
     </div>
   )

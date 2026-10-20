@@ -1,9 +1,9 @@
 import { AnimatePresence, motion } from 'framer-motion'
-import { Check, Link2, ScanLine } from 'lucide-react'
+import { Check, Link2, ScanLine, X } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { DINNER_TOTAL, PersonId, dinnerItems, people, restaurantById } from '../data'
 import { members, useTrip } from '../store'
-import { Button, Card, Row, Sheet, cx } from '../components/ui'
+import { Avatar, Button, Card, Row, Sheet, cx } from '../components/ui'
 
 const fmt = (n: number) => (Number.isInteger(Math.round(n * 100) / 100) ? `€${Math.round(n)}` : `€${n.toFixed(2)}`)
 
@@ -91,18 +91,27 @@ export default function AddExpense({ open }: { open: boolean }) {
                 {who.length ? `${who.length} ${who.length === 1 ? 'person' : 'people'} · ${fmt(item.amount / who.length)} each` : 'Nobody selected'}
                 {partial && who.length > 0 && ` · ${crew.filter((p) => !who.includes(p)).map((p) => people[p].name).join(' and ')} skipped`}
               </div>
-              <div className="flex flex-wrap gap-1.5">
+              <div className="grid grid-cols-6 gap-1">
                 {crew.map((p) => {
                   const on = who.includes(p)
                   return (
                     <motion.button
                       key={p}
-                      whileTap={{ scale: 0.92 }}
+                      data-chip={p}
+                      whileTap={{ scale: 0.9 }}
                       onClick={() => toggle(item.id, p)}
-                      className={cx('flex items-center gap-1 rounded-full px-2.5 py-[5px] text-foot font-semibold', on ? 'bg-blue text-white' : 'border border-dashed border-gray-3 bg-white text-label-2 line-through')}
+                      aria-pressed={on}
+                      className="flex flex-col items-center gap-1"
                     >
-                      {on && <Check size={12} strokeWidth={3} />}
-                      {people[p].name}
+                      <span className="relative">
+                        <span className={cx('block transition-all', !on && 'opacity-30 grayscale')}>
+                          <Avatar id={p} size={38} ring={false} />
+                        </span>
+                        <span className={cx('absolute -bottom-0.5 -right-0.5 flex h-[18px] w-[18px] items-center justify-center rounded-full ring-2 ring-white', on ? 'bg-blue text-white' : 'bg-gray-3 text-white')}>
+                          {on ? <Check size={11} strokeWidth={3.5} /> : <X size={11} strokeWidth={3.5} />}
+                        </span>
+                      </span>
+                      <span className={cx('text-cap font-semibold', on ? 'text-label' : 'text-label-3 line-through')}>{people[p].name}</span>
                     </motion.button>
                   )
                 })}

@@ -3,7 +3,7 @@ import { ArrowRight, BarChart3, Check, MapPin, MoreHorizontal, Phone, Plus, Rece
 import { useState } from 'react'
 import { ME, PersonId, SPENT_BEFORE_DINNER, DINNER_TOTAL, UNSIMPLIFIED_TRANSFERS, people, restaurantById } from '../data'
 import { HubTab, balances, members, simplify, useTrip } from '../store'
-import { Avatar, AvatarStack, Button, Card, Chip, NavBar, Pill, Row, Screen, SectionTitle, Segmented, cx } from '../components/ui'
+import { Avatar, AvatarStack, Button, Card, Chip, NavBar, Row, Screen, SectionTitle, Segmented, cx } from '../components/ui'
 
 const euro = (n: number) => `€${Math.abs(Math.round(n)).toLocaleString('en-US')}`
 
@@ -78,6 +78,14 @@ function QuickAction({ icon, label, onClick, primary }: { icon: React.ReactNode;
   )
 }
 
+function IconButton({ children, label, onClick }: { children: React.ReactNode; label: string; onClick: () => void }) {
+  return (
+    <motion.button whileTap={{ scale: 0.92 }} onClick={onClick} aria-label={label} className="flex h-11 w-11 items-center justify-center rounded-full bg-fill3 text-blue">
+      {children}
+    </motion.button>
+  )
+}
+
 function Time({ t }: { t: string }) {
   return <span className="w-11 text-sub font-semibold text-label-2">{t}</span>
 }
@@ -138,18 +146,16 @@ function PlanTab() {
             <AvatarStack ids={crew} size={30} />
             <span className="text-foot text-label-2">{crew.length}{s.renAdded ? ' · Ren as guest' : ''}</span>
           </div>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <Pill onClick={() => s.showToast('Opens Maps in the real app', 'neutral')}>
-              <span className="flex items-center gap-1"><MapPin size={15} /> Directions</span>
-            </Pill>
-            <Pill onClick={() => s.showToast('Calls the restaurant in the real app', 'neutral')}>
-              <span className="flex items-center gap-1"><Phone size={15} /> Call</span>
-            </Pill>
-            {s.dinnerShares ? (
-              <Pill onClick={() => s.setTab('money')}>View balances</Pill>
-            ) : (
-              <Pill primary onClick={() => s.openSheet('addExpense')}>Add expense</Pill>
-            )}
+          <div className="mt-3.5 flex items-center gap-2">
+            <motion.button
+              whileTap={{ scale: 0.97 }}
+              onClick={() => (s.dinnerShares ? s.setTab('money') : s.openSheet('addExpense'))}
+              className={cx('flex h-11 flex-1 items-center justify-center gap-1.5 rounded-full text-sub font-semibold', s.dinnerShares ? 'bg-fill3 text-label' : 'bg-blue text-white')}
+            >
+              <Receipt size={17} /> {s.dinnerShares ? 'View balances' : 'Add expense'}
+            </motion.button>
+            <IconButton label="Directions" onClick={() => s.showToast('Opens Maps in the real app', 'neutral')}><MapPin size={19} /></IconButton>
+            <IconButton label="Call" onClick={() => s.showToast('Calls the restaurant in the real app', 'neutral')}><Phone size={18} /></IconButton>
           </div>
         </motion.div>
       )}

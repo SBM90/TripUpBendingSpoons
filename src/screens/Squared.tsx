@@ -20,7 +20,7 @@ export default function Squared() {
       }
       pad="pb-44"
     >
-      <div className="flex flex-col items-center pt-10 text-center">
+      <div className="flex flex-col items-center pt-6 text-center">
         <motion.div
           initial={{ scale: 0, rotate: -30 }}
           animate={{ scale: 1, rotate: 0 }}
