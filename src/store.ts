@@ -9,7 +9,7 @@ import {
   restaurantById,
 } from './data'
 
-export type Screen = 'home' | 'hub' | 'poll' | 'squared'
+export type Screen = 'home' | 'hub' | 'poll' | 'squared' | 'nicLock'
 export type Sheet = null | 'addEvent' | 'addPeople' | 'newPoll' | 'addExpense' | 'pay'
 export type InviteTarget = 'dinner' | 'trip'
 export type HubTab = 'plan' | 'polls' | 'money'
@@ -36,6 +36,13 @@ export interface Push {
   device: string
 }
 
+export interface Peek {
+  id: number
+  who: PersonId
+  title: string
+  body: string
+}
+
 export interface Transfer {
   from: PersonId
   to: PersonId
@@ -47,30 +54,38 @@ interface State {
   sheet: Sheet
   hubTab: HubTab
   dinnerAdded: boolean
+  dinnerName: string
+  dinnerDay: string
+  dinnerTime: string
+  closeAfter: string
   renAdded: boolean
   renScope: InviteTarget
   inviteTarget: InviteTarget
   poll: Poll | null
   dinnerShares: Partial<Record<PersonId, number>> | null
+  dinnerTotal: number
   settleRequested: boolean
   paid: PersonId[]
   viewer: PersonId
   toast: Toast | null
   push: Push | null
   highlightDinner: boolean
+  peek: Peek | null
 
   go: (screen: Screen, tab?: HubTab) => void
   openSheet: (sheet: Sheet) => void
   setTab: (tab: HubTab) => void
   showToast: (text: string, tone?: Toast['tone']) => void
-  addDinner: () => void
+  addDinner: (e?: { name: string; day: string; time: string }) => void
+  setCloseAfter: (v: string) => void
+  switchPhone: (who: PersonId, then: Partial<State>, title: string, body: string) => void
   invite: (target: InviteTarget) => void
   addRen: () => void
   sendPoll: (options: string[]) => void
   vote: (who: PersonId, option: string) => void
   nudge: () => void
   closePoll: () => void
-  saveExpense: (shares: Partial<Record<PersonId, number>>) => void
+  saveExpense: (shares: Partial<Record<PersonId, number>>, total: number) => void
   askSettle: () => void
   openPush: () => void
   pay: () => void
@@ -86,10 +101,10 @@ const later = (ms: number, fn: () => void) => {
 export const members = (s: Pick<State, 'renAdded'>): PersonId[] =>
   s.renAdded ? [...CREW, 'ren'] : CREW
 
-export const balances = (s: Pick<State, 'dinnerShares'>): Record<PersonId, number> => {
+export const balances = (s: Pick<State, 'dinnerShares' | 'dinnerTotal'>): Record<PersonId, number> => {
   const b = { ...balancesBeforeDinner }
   if (s.dinnerShares) {
-    b[ME] += DINNER_TOTAL
+    b[ME] += s.dinnerTotal
     for (const [id, share] of Object.entries(s.dinnerShares)) b[id as PersonId] -= share ?? 0
   }
   return b
@@ -126,17 +141,23 @@ const initial = {
   sheet: null as Sheet,
   hubTab: 'plan' as HubTab,
   dinnerAdded: false,
+  dinnerName: 'Final dinner',
+  dinnerDay: 'Tonight',
+  dinnerTime: '21:00',
+  closeAfter: '30 min',
   renAdded: false,
   renScope: 'dinner' as InviteTarget,
   inviteTarget: 'dinner' as InviteTarget,
   poll: null as Poll | null,
   dinnerShares: null as Partial<Record<PersonId, number>> | null,
+  dinnerTotal: DINNER_TOTAL,
   settleRequested: false,
   paid: [] as PersonId[],
   viewer: ME as PersonId,
   toast: null as Toast | null,
   push: null as Push | null,
   highlightDinner: false,
+  peek: null as Peek | null,
 }
 
 export const useTrip = create<State>((set, get) => ({
@@ -153,9 +174,21 @@ export const useTrip = create<State>((set, get) => ({
     })
   },
 
-  addDinner: () => {
-    set({ dinnerAdded: true, sheet: null, highlightDinner: true })
-    get().showToast('Final dinner added to tonight')
+  addDinner: (e) => {
+    set({ dinnerAdded: true, sheet: null, highlightDinner: true, ...(e ? { dinnerName: e.name || 'Final dinner', dinnerDay: e.day, dinnerTime: e.time } : {}) })
+    get().showToast(`${get().dinnerName} added to ${get().dinnerDay.toLowerCase()}`)
+  },
+
+  setCloseAfter: (closeAfter) => set({ closeAfter }),
+
+  // Flips the device to another person's phone, with a peekaboo card explaining the switch.
+  switchPhone: (who, then, title, body) => {
+    const id = Date.now()
+    set({ peek: { id, who, title, body } })
+    later(450, () => set({ viewer: who, ...then }))
+    later(2600, () => {
+      if (get().peek?.id === id) set({ peek: null })
+    })
   },
 
   invite: (inviteTarget) => set({ inviteTarget, sheet: 'addPeople' }),
@@ -220,8 +253,8 @@ export const useTrip = create<State>((set, get) => ({
     })
   },
 
-  saveExpense: (shares) => {
-    set({ dinnerShares: shares, sheet: null, hubTab: 'money', screen: 'hub', highlightDinner: false })
+  saveExpense: (shares, total) => {
+    set({ dinnerShares: shares, dinnerTotal: total, sheet: null, hubTab: 'money', screen: 'hub', highlightDinner: false })
     get().showToast('Dinner added · balances updated')
   },
 
@@ -230,24 +263,21 @@ export const useTrip = create<State>((set, get) => ({
     const debtors = simplify(balances(get())).map((t) => people[t.from].name)
     get().showToast(`Sent to ${debtors.slice(0, -1).join(', ')} and ${debtors.slice(-1)}`, 'neutral')
     const nicOwes = simplify(balances(get())).find((t) => t.from === 'nic')?.amount ?? 0
-    later(1800, () =>
-      set({
-        push: {
-          title: 'TripUp · Lisbon',
-          body: `Ari asked everyone to settle. You owe €${nicOwes}.`,
-          device: 'On Nic’s phone',
-        },
-      }),
+    later(1500, () =>
+      get().switchPhone('nic', { screen: 'nicLock', sheet: null }, 'Now you’re on Nic’s phone', 'Nic just got Ari’s request to settle up.'),
     )
+    later(2700, () => set({ push: { title: 'TripUp · Lisbon', body: `Ari asked everyone to settle. You owe €${nicOwes}.`, device: 'Nic’s phone' } }))
   },
 
-  openPush: () => set({ push: null, viewer: 'nic', sheet: 'pay' }),
+  openPush: () => set({ push: null, sheet: 'pay' }),
 
   pay: () => {
     set({ paid: ['nic'] })
     const rest = simplify(balances(get())).map((t) => t.from).filter((p) => p !== 'nic')
     rest.forEach((p, i) => later(900 + i * 700, () => set((s) => ({ paid: [...s.paid, p] }))))
-    later(900 + rest.length * 700 + 400, () => set({ sheet: null, viewer: ME, screen: 'squared' }))
+    later(900 + rest.length * 700 + 300, () =>
+      get().switchPhone(ME, { sheet: null, screen: 'squared' }, 'Back on Ari’s phone', 'Nic paid, and the rest of the group settled up too.'),
+    )
   },
 
   reset: () => {

@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion'
 import { Check } from 'lucide-react'
-import { DINNER_TOTAL, ME, SPENT_BEFORE_DINNER, people } from '../data'
+import { ME, SPENT_BEFORE_DINNER, people } from '../data'
 import { balances, simplify, useTrip } from '../store'
 import { Button, Card, Row, Screen } from '../components/ui'
 
@@ -54,7 +54,7 @@ export default function Squared() {
           ['4', 'days'],
           ['12', 'places'],
           ['3', 'polls'],
-          [`€${(SPENT_BEFORE_DINNER + DINNER_TOTAL).toLocaleString('en-US')}`, 'spent'],
+          [`€${(SPENT_BEFORE_DINNER + s.dinnerTotal).toLocaleString('en-US')}`, 'spent'],
         ].map(([v, k]) => (
           <div key={k}>
             <div className="text-headline">{v}</div>

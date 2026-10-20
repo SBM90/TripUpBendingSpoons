@@ -3,18 +3,19 @@ import { Check as CheckIcon, Loader2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { nicBreakdown } from '../data'
 import { balances, simplify, useTrip } from '../store'
-import { Button, Card, Check, Row, Sheet } from '../components/ui'
+import { Avatar, Button, Card, Check, Row, Sheet } from '../components/ui'
 
 const methods = [
   { id: 'bank', title: 'Bank transfer', sub: 'Instant · Ari’s IBAN saved' },
   { id: 'mbway', title: 'MB Way' },
   { id: 'revolut', title: 'Revolut' },
-  { id: 'cash', title: 'Paid in cash', sub: 'Ari confirms' },
 ]
 
 export default function Pay({ open }: { open: boolean }) {
   const pay = useTrip((s) => s.pay)
   const owed = useTrip((s) => simplify(balances(s)).find((t) => t.from === 'nic')?.amount ?? 0)
+  const dinnerShare = useTrip((s) => Math.round(s.dinnerShares?.nic ?? 27))
+  const breakdown = nicBreakdown.map((b, i) => (i === 0 ? { ...b, amount: dinnerShare } : b))
   const [method, setMethod] = useState('bank')
   const [state, setState] = useState<'idle' | 'paying' | 'done'>('idle')
 
@@ -30,7 +31,7 @@ export default function Pay({ open }: { open: boolean }) {
     }, 1100)
   }
   const close = () => {
-    if (state === 'idle') useTrip.setState({ sheet: null, viewer: 'ari' })
+    if (state === 'idle') useTrip.getState().switchPhone('ari', { sheet: null, screen: 'hub', hubTab: 'money' }, 'Back on Ari’s phone', 'Nic hasn’t paid yet.')
   }
 
   return (
@@ -59,15 +60,18 @@ export default function Pay({ open }: { open: boolean }) {
         <span className="rounded-full bg-indigo/10 px-3 py-1 text-cap font-semibold text-indigo">Nic’s view</span>
       </div>
       <div className="flex flex-col items-center">
-        <div className="text-headline text-label-2">Pay Ari</div>
+        <div className="flex items-center gap-2">
+          <Avatar id="ari" size={28} ring={false} />
+          <span className="text-headline text-label-2">Pay Ari</span>
+        </div>
         <motion.div key={state} initial={{ scale: 0.95 }} animate={{ scale: 1 }} className="text-large">
           €{owed}.00
         </motion.div>
       </div>
 
       <Card className="mt-4">
-        {nicBreakdown.map((b, i) => (
-          <Row key={b.label} title={b.label} right={`€${b.amount}`} last={i === nicBreakdown.length - 1} />
+        {breakdown.map((b, i) => (
+          <Row key={b.label} title={b.label} right={`€${b.amount}`} last={i === breakdown.length - 1} />
         ))}
       </Card>
 

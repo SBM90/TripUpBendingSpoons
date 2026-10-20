@@ -1,6 +1,8 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import { Check, RotateCcw } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { ReactNode, useEffect, useState } from 'react'
+import { people } from './data'
+import { Avatar } from './components/ui'
 import AddEvent from './screens/AddEvent'
 import AddExpense from './screens/AddExpense'
 import AddPeople from './screens/AddPeople'
@@ -8,6 +10,7 @@ import Home from './screens/Home'
 import Hub from './screens/Hub'
 import LivePoll from './screens/LivePoll'
 import NewPoll from './screens/NewPoll'
+import NicLock from './screens/NicLock'
 import Pay from './screens/Pay'
 import Squared from './screens/Squared'
 import { useTrip } from './store'
@@ -74,7 +77,7 @@ function Toasts() {
 }
 
 function PushBanner() {
-  const push = useTrip((s) => s.push)
+  const push = useTrip((s) => (s.screen === 'nicLock' ? null : s.push))
   const openPush = useTrip((s) => s.openPush)
   return (
     <AnimatePresence>
@@ -123,6 +126,7 @@ function Phone() {
           {screen === 'hub' && <Hub />}
           {screen === 'poll' && <LivePoll />}
           {screen === 'squared' && <Squared />}
+          {screen === 'nicLock' && <NicLock />}
         </motion.div>
       </AnimatePresence>
       <AddEvent open={sheet === 'addEvent'} />
@@ -132,7 +136,77 @@ function Phone() {
       <Pay open={sheet === 'pay'} />
       <Toasts />
       <PushBanner />
+      <ViewerPill />
     </div>
+  )
+}
+
+// Shows whose phone the prototype is currently showing, whenever it isn't Ari's.
+function ViewerPill() {
+  const viewer = useTrip((s) => s.viewer)
+  if (viewer === 'ari') return null
+  return (
+    <div className="pointer-events-none absolute inset-x-0 z-[65] flex justify-center" style={{ top: 'calc(var(--safe-top) + 2px)' }}>
+      <div className="flex items-center gap-1.5 rounded-full bg-indigo py-1 pl-1 pr-3 text-cap font-semibold text-white shadow-lg">
+        <Avatar id={viewer} size={20} ring={false} />
+        {people[viewer].name}’s phone
+      </div>
+    </div>
+  )
+}
+
+// Flips the whole device when the prototype switches from one person's phone to another's.
+function Flip({ children }: { children: ReactNode }) {
+  const viewer = useTrip((s) => s.viewer)
+  return (
+    <div className="h-full w-full" style={{ perspective: 1800 }}>
+      <AnimatePresence mode="wait" initial={false}>
+        <motion.div
+          key={viewer}
+          className="h-full w-full"
+          initial={{ rotateY: -90, scale: 0.94 }}
+          animate={{ rotateY: 0, scale: 1 }}
+          exit={{ rotateY: 90, scale: 0.94 }}
+          transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+        >
+          {children}
+        </motion.div>
+      </AnimatePresence>
+    </div>
+  )
+}
+
+// The "peekaboo" card that tells the person demoing whose phone they are looking at now.
+function Peekaboo() {
+  const peek = useTrip((s) => s.peek)
+  return (
+    <AnimatePresence>
+      {peek && (
+        <motion.div
+          key={peek.id}
+          className="pointer-events-auto absolute inset-0 z-[90] flex items-center justify-center bg-black/25 p-6"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={() => useTrip.setState({ peek: null })}
+        >
+          <motion.div
+            className="w-full max-w-[300px] rounded-[28px] bg-white p-6 text-center shadow-[0_24px_60px_rgba(0,0,0,0.28)]"
+            initial={{ y: 40, scale: 0.8, rotate: -4 }}
+            animate={{ y: 0, scale: 1, rotate: 0 }}
+            exit={{ y: -20, scale: 0.9, opacity: 0 }}
+            transition={{ type: 'spring', stiffness: 360, damping: 20 }}
+          >
+            <div className="mb-1 text-cap font-semibold uppercase tracking-wide text-indigo">Switching phones</div>
+            <motion.div className="mx-auto my-3 w-fit" initial={{ scale: 0 }} animate={{ scale: [0, 1.25, 1] }} transition={{ delay: 0.15, duration: 0.45 }}>
+              <Avatar id={peek.who} size={64} ring={false} />
+            </motion.div>
+            <div className="text-title3">{peek.title}</div>
+            <div className="mt-1 text-sub text-label-2">{peek.body}</div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   )
 }
 
@@ -180,25 +254,30 @@ export default function App() {
   const scale = useFrameScale()
   if (!framed) {
     return (
-      <div className="phone-full fixed inset-0">
-        <Phone />
+      <div className="phone-full fixed inset-0 bg-[#1c1c1e]">
+        <Flip>
+          <Phone />
+        </Flip>
+        <Peekaboo />
       </div>
     )
   }
   return (
     <div className="flex h-screen items-center justify-center gap-16 overflow-hidden bg-[#e9e9ee] px-8">
       <ScenarioPanel />
-      <div style={{ width: 415 * scale, height: FRAME_H * scale }} className="shrink-0">
-      <div
-        className="phone-framed relative w-[415px] origin-top-left rounded-[64px] bg-[#1c1c1e] p-[11px] shadow-[0_30px_80px_rgba(0,0,0,0.25)]"
-        style={{ transform: `scale(${scale})` }}
-      >
-        <div className="relative h-[852px] w-[393px] overflow-hidden rounded-[54px]">
-          <Phone />
-          <StatusBar />
-          <div className="pointer-events-none absolute bottom-2 left-1/2 z-[60] h-[5px] w-[139px] -translate-x-1/2 rounded-full bg-black" />
+      <div style={{ width: 415 * scale, height: FRAME_H * scale }} className="relative shrink-0">
+        <div className="phone-framed absolute left-0 top-0 h-[874px] w-[415px] origin-top-left" style={{ transform: `scale(${scale})` }}>
+          <Flip>
+            <div className="relative h-full w-full rounded-[64px] bg-[#1c1c1e] p-[11px] shadow-[0_30px_80px_rgba(0,0,0,0.25)]">
+              <div className="relative h-[852px] w-[393px] overflow-hidden rounded-[54px]">
+                <Phone />
+                <StatusBar />
+                <div className="pointer-events-none absolute bottom-2 left-1/2 z-[60] h-[5px] w-[139px] -translate-x-1/2 rounded-full bg-black" />
+              </div>
+            </div>
+          </Flip>
+          <Peekaboo />
         </div>
-      </div>
       </div>
     </div>
   )

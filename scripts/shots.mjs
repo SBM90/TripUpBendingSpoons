@@ -7,6 +7,7 @@ const URL = process.env.URL ?? 'http://localhost:5173'
 const only = process.argv[2]
 
 const wine = { ari: 39, maya: 39, leo: 39, sam: 39, nic: 27, ren: 27 }
+const total = 210
 const poll = (votes, status = 'live', winner) => ({
   question: 'Where should we eat tonight?',
   options: ['taberna', 'ramiro', 'timeout'],
@@ -29,14 +30,17 @@ const states = {
   '03c-scrolled': { screen: 'hub', dinnerAdded: true, renAdded: true, after: 'scroll' },
   '04-new-poll': { screen: 'hub', dinnerAdded: true, renAdded: true, sheet: 'newPoll' },
   '05-live-poll': { screen: 'poll', dinnerAdded: true, renAdded: true, poll: poll(live) },
+  '04b-poll-edit': { screen: 'hub', dinnerAdded: true, renAdded: true, sheet: 'newPoll', after: 'edit' },
   '05b-live-voted': { screen: 'poll', dinnerAdded: true, renAdded: true, poll: poll({ ...live, ari: 'taberna' }) },
   '06-plan-updated': { screen: 'hub', dinnerAdded: true, renAdded: true, poll: poll(final, 'closed', 'taberna'), highlightDinner: true, toast: { id: 1, text: 'Taberna da Rua won · added to tonight', tone: 'success' } },
   '06b-polls-tab': { screen: 'hub', hubTab: 'polls', dinnerAdded: true, renAdded: true, poll: poll(final, 'closed', 'taberna') },
   '07-add-expense': { screen: 'hub', dinnerAdded: true, renAdded: true, poll: poll(final, 'closed', 'taberna'), sheet: 'addExpense', after: 'wine' },
   '08-money': { screen: 'hub', hubTab: 'money', dinnerAdded: true, renAdded: true, poll: poll(final, 'closed', 'taberna'), dinnerShares: wine },
-  '08b-push': { screen: 'hub', hubTab: 'money', dinnerAdded: true, renAdded: true, poll: poll(final, 'closed', 'taberna'), dinnerShares: wine, settleRequested: true, push: { title: 'TripUp · Lisbon', body: 'Ari asked everyone to settle. You owe €57.', device: 'On Nic’s phone' } },
-  '09-pay': { screen: 'hub', hubTab: 'money', dinnerAdded: true, renAdded: true, poll: poll(final, 'closed', 'taberna'), dinnerShares: wine, settleRequested: true, sheet: 'pay', viewer: 'nic' },
-  '10-squared': { screen: 'squared', dinnerAdded: true, renAdded: true, poll: poll(final, 'closed', 'taberna'), dinnerShares: wine, settleRequested: true, paid: ['nic', 'leo', 'sam', 'ren'] },
+  '08b-push': { screen: 'hub', hubTab: 'money', dinnerAdded: true, renAdded: true, poll: poll(final, 'closed', 'taberna'), dinnerShares: wine, dinnerTotal: total, settleRequested: true, push: { title: 'TripUp · Lisbon', body: 'Ari asked everyone to settle. You owe €57.', device: 'On Nic’s phone' } },
+  '09-pay': { screen: 'hub', hubTab: 'money', dinnerAdded: true, renAdded: true, poll: poll(final, 'closed', 'taberna'), dinnerShares: wine, dinnerTotal: total, settleRequested: true, sheet: 'pay', viewer: 'nic' },
+  '09b-nic-lock': { screen: 'nicLock', viewer: 'nic', dinnerAdded: true, renAdded: true, poll: poll(final, 'closed', 'taberna'), dinnerShares: wine, dinnerTotal: total, settleRequested: true, push: { title: 'TripUp · Lisbon', body: 'Ari asked everyone to settle. You owe €57.', device: 'Nic’s phone' } },
+  '09c-peek': { screen: 'nicLock', viewer: 'nic', dinnerAdded: true, renAdded: true, peek: { id: 1, who: 'nic', title: 'Now you’re on Nic’s phone', body: 'Nic just got Ari’s request to settle up.' } },
+  '10-squared': { screen: 'squared', dinnerAdded: true, renAdded: true, poll: poll(final, 'closed', 'taberna'), dinnerShares: wine, dinnerTotal: total, settleRequested: true, paid: ['nic', 'leo', 'sam', 'ren'] },
 }
 
 const browser = await puppeteer.launch({ executablePath: CHROME, headless: true, args: ['--hide-scrollbars'] })
@@ -58,6 +62,10 @@ for (const [name, st] of Object.entries(states)) {
   if (after === 'scroll') {
     await page.evaluate(() => { const el = [...document.querySelectorAll('.overflow-y-auto')].at(-1); el.scrollTop = 420; el.dispatchEvent(new Event('scroll')) })
     await new Promise((r) => setTimeout(r, 700))
+  }
+  if (after === 'edit') {
+    await page.evaluate(() => [...document.querySelectorAll('button')].find((b) => b.textContent.trim().startsWith('Edit'))?.click())
+    await new Promise((r) => setTimeout(r, 600))
   }
   if (after === 'wine') {
     await page.evaluate(() => {

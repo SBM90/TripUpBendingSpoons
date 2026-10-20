@@ -1,7 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import { ArrowRight, BarChart3, CalendarPlus, Check, ChevronLeft, MapPin, MoreHorizontal, Phone, Plus, Receipt, UserPlus, Utensils, Vote } from 'lucide-react'
 import { ReactNode, useRef, useState } from 'react'
-import { CREW, ME, PersonId, SPENT_BEFORE_DINNER, DINNER_TOTAL, UNSIMPLIFIED_TRANSFERS, people, restaurantById } from '../data'
+import { CREW, ME, PersonId, SPENT_BEFORE_DINNER, UNSIMPLIFIED_TRANSFERS, people, restaurantById } from '../data'
 import { HubTab, balances, members, simplify, useTrip } from '../store'
 import { Avatar, AvatarStack, Button, Card, Chip, NavBar, Row, Screen, SectionTitle, Segmented, cx } from '../components/ui'
 
@@ -23,7 +23,7 @@ export default function Hub() {
   const bottom =
     s.hubTab === 'plan' ? (
       <div className="flex gap-2">
-        <QuickAction icon={<CalendarPlus size={18} />} label="Event" primary={!s.dinnerAdded} onClick={() => (s.dinnerAdded ? s.showToast('Tonight’s plan is set', 'neutral') : s.openSheet('addEvent'))} />
+        <QuickAction icon={<CalendarPlus size={18} />} label="Event" primary={!s.dinnerAdded} onClick={() => (s.dinnerAdded ? s.showToast('This demo adds one event to tonight', 'neutral') : s.openSheet('addEvent'))} />
         <QuickAction icon={<Vote size={18} />} label="Poll" primary={s.dinnerAdded && !s.poll} onClick={() => (s.poll?.status === 'live' ? s.go('poll') : s.openSheet('newPoll'))} />
         <QuickAction icon={<Receipt size={18} />} label="Expense" onClick={() => s.openSheet('addExpense')} />
       </div>
@@ -42,6 +42,18 @@ export default function Hub() {
     )
 
   return (
+    <motion.div
+      className="absolute inset-0"
+      style={{ touchAction: 'pan-y' }}
+      // Swipe left or right anywhere on the hub to move between Plan, Polls and Money.
+      onPanEnd={(_, info) => {
+        const horizontal = Math.abs(info.offset.x) > Math.abs(info.offset.y) * 1.4
+        if (!horizontal || (Math.abs(info.offset.x) < 60 && Math.abs(info.velocity.x) < 400)) return
+        const i = TABS.indexOf(s.hubTab)
+        const next = info.offset.x < 0 ? Math.min(i + 1, TABS.length - 1) : Math.max(i - 1, 0)
+        if (next !== i) s.setTab(TABS[next])
+      }}
+    >
     <Screen bottom={bottom} onScroll={(top) => setScrolled(top > 96)}>
       <NavBar back="Trips" onBack={() => s.go('home')} right={<MoreHorizontal className="text-blue" />} />
       <h1 className="text-large">Lisbon</h1>
@@ -110,6 +122,7 @@ export default function Hub() {
         </AnimatePresence>
       </div>
     </Screen>
+    </motion.div>
   )
 }
 
@@ -151,9 +164,9 @@ function DinnerCard() {
       className={cx('mt-3 rounded-2xl p-4', s.highlightDinner ? 'bg-white ring-2 ring-blue' : 'bg-gray-6')}
     >
       <div className="flex items-center gap-2">
-        <span className="text-sub font-semibold text-blue">21:00</span>
+        <span className="text-sub font-semibold text-blue">{s.dinnerDay === 'Tonight' ? s.dinnerTime : `${s.dinnerDay} · ${s.dinnerTime}`}</span>
         {winner ? (
-          s.dinnerShares ? <Chip tone="green">Paid · €{DINNER_TOTAL}</Chip> : s.highlightDinner && <Chip tone="blue">Just decided</Chip>
+          s.dinnerShares ? <Chip tone="green">Paid · €{s.dinnerTotal}</Chip> : s.highlightDinner && <Chip tone="blue">Just decided</Chip>
         ) : poll ? (
           <Chip tone="red">● Poll live</Chip>
         ) : (
@@ -166,7 +179,7 @@ function DinnerCard() {
           <Utensils size={19} />
         </div>
         <div className="min-w-0 flex-1">
-          <div className="text-title3">{winner ? winner.name : 'Final dinner'}</div>
+          <div className="text-title3">{winner ? winner.name : s.dinnerName}</div>
           <div className="text-foot text-label-2">{winner ? `${winner.vibe} · ${winner.walk}` : poll ? `${voted} of ${crew.length} voted on the place` : 'Where to eat: let the group vote'}</div>
         </div>
       </div>
@@ -240,8 +253,8 @@ function PlanTab() {
             <CalendarPlus size={20} />
           </div>
           <div className="flex-1">
-            <div className="text-headline text-blue">Add the final dinner</div>
-            <div className="text-foot text-label-2">Nothing planned after 15:00 yet</div>
+            <div className="text-headline text-blue">Add another event</div>
+            <div className="text-foot text-label-2">Dinner, drinks, a day trip: anything the group plans</div>
           </div>
         </motion.button>
       )}
@@ -253,7 +266,7 @@ function PlanTab() {
       <Card className="mt-6" onClick={() => s.setTab('money')}>
         <Row
           title={b[ME] > 0.5 ? `You’re owed ${euro(b[ME])}` : 'You’re all even'}
-          sub={`${euro(SPENT_BEFORE_DINNER + (s.dinnerShares ? DINNER_TOTAL : 0))} spent by the group`}
+          sub={`${euro(SPENT_BEFORE_DINNER + (s.dinnerShares ? s.dinnerTotal : 0))} spent by the group`}
           right={<span className="text-blue">Money ›</span>}
           last
         />
@@ -315,8 +328,8 @@ function MoneyTab() {
           {b[ME] > 0.5 ? euro(b[ME]) : 'All even'}
         </motion.div>
         <div className="text-foot text-label-2">
-          Group spent {euro(SPENT_BEFORE_DINNER + (s.dinnerShares ? DINNER_TOTAL : 0))}
-          {s.dinnerShares ? ` · dinner just added (€${DINNER_TOTAL})` : ''}
+          Group spent {euro(SPENT_BEFORE_DINNER + (s.dinnerShares ? s.dinnerTotal : 0))}
+          {s.dinnerShares ? ` · dinner just added (€${s.dinnerTotal})` : ''}
         </div>
       </div>
 
@@ -357,7 +370,7 @@ function MoneyTab() {
 
       <SectionTitle>Recent expenses</SectionTitle>
       <Card>
-        {s.dinnerShares && <Row title="Dinner · Taberna da Rua" sub="Ari paid · split by item" right="€210" />}
+        {s.dinnerShares && <Row title="Dinner · Taberna da Rua" sub="Ari paid · split by item" right={`€${s.dinnerTotal}`} />}
         <Row title="Groceries · Casa Alfama" sub="Maya paid · split 5 ways" right="€84" />
         <Row title="Uber to LX Factory" sub="Maya paid · split 5 ways" right="€54" />
         <Row title="Belém Tower tickets" sub="Leo paid · split 5 ways" right="€60" last />

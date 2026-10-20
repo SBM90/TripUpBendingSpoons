@@ -6,6 +6,8 @@ const listNames = (n: string[]) => (n.length < 2 ? n.join('') : `${n.slice(0, -1
 import { members, tally, useTrip } from '../store'
 import { AvatarStack, Bar, Button, Chip, NavBar, Pill, Screen, cx } from '../components/ui'
 
+const closeLabel = (c: string) => ({ '15 min': 'closes 21:15', '30 min': 'closes 21:30', '1 hour': 'closes 22:00' } as Record<string, string>)[c] ?? 'closes when all vote'
+
 export default function LivePoll() {
   const s = useTrip()
   const poll = s.poll
@@ -33,7 +35,7 @@ export default function LivePoll() {
       <div className="mt-2 flex items-center gap-2">
         {closed ? <Chip>Closed</Chip> : <Chip tone="red">● Live</Chip>}
         <span className="text-sub text-label-2">
-          {total} of {crew.length} voted{closed ? '' : ' · closes 21:30'}
+          {total} of {crew.length} voted{closed ? '' : ` · ${closeLabel(s.closeAfter)}`}
         </span>
       </div>
 

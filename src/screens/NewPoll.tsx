@@ -1,4 +1,5 @@
-import { Plus, Utensils } from 'lucide-react'
+import { AnimatePresence, motion } from 'framer-motion'
+import { ChevronRight, Clock, Plus, Utensils } from 'lucide-react'
 import { useState } from 'react'
 import { restaurants } from '../data'
 import { members, useTrip } from '../store'
@@ -12,6 +13,9 @@ export default function NewPoll({ open }: { open: boolean }) {
   const [picked, setPicked] = useState<string[]>(restaurants.map((r) => r.id))
   const [addToPlan, setAddToPlan] = useState(true)
   const [anon, setAnon] = useState(false)
+  const [editing, setEditing] = useState(false)
+  const closeAfter = useTrip((s) => s.closeAfter)
+  const setCloseAfter = useTrip((s) => s.setCloseAfter)
 
   const toggle = (id: string) => setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]))
   const ordered = restaurants.map((r) => r.id).filter((id) => picked.includes(id))
@@ -57,8 +61,30 @@ export default function NewPoll({ open }: { open: boolean }) {
       </button>
 
       <Card className="mt-4">
-        <Row title="Closes" right={<span className="text-foot">In 30 min or when all vote</span>} />
-        <Row title="Add winner to itinerary" trail={<Toggle on={addToPlan} onChange={setAddToPlan} />} />
+        <Row
+          lead={<Clock size={20} className="text-blue" />}
+          title="Closes"
+          sub={closeAfter === 'When all vote' ? 'When everyone has voted' : `In ${closeAfter} or when everyone votes`}
+          trail={
+            <button onClick={() => setEditing((v) => !v)} className="flex items-center gap-0.5 rounded-full bg-blue/10 px-3 py-1.5 text-foot font-semibold text-blue">
+              {editing ? 'Done' : 'Edit'} <ChevronRight size={14} className={editing ? 'rotate-90 transition-transform' : 'transition-transform'} />
+            </button>
+          }
+        />
+        <AnimatePresence initial={false}>
+          {editing && (
+            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+              <div className="flex flex-wrap gap-1.5 border-b border-sep/70 pb-3">
+                {['15 min', '30 min', '1 hour', 'When all vote'].map((o) => (
+                  <button key={o} onClick={() => setCloseAfter(o)} className={`rounded-full px-3 py-[7px] text-foot font-semibold ${closeAfter === o ? 'bg-blue text-white' : 'bg-fill3 text-label'}`}>
+                    {o}
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+        <Row title="Add winner to the event" trail={<Toggle on={addToPlan} onChange={setAddToPlan} />} />
         <Row title="Anonymous votes" trail={<Toggle on={anon} onChange={setAnon} />} last />
       </Card>
     </Sheet>
