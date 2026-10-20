@@ -9,7 +9,7 @@ const fmt = (n: number) => (Math.abs(n - Math.round(n)) < 0.005 ? `€${Math.rou
 const names = (ps: PersonId[]) => (ps.length < 2 ? ps.map((p) => people[p].name).join('') : `${ps.slice(0, -1).map((p) => people[p].name).join(', ')} and ${people[ps[ps.length - 1]].name}`)
 
 export default function AddExpense({ open }: { open: boolean }) {
-  const close = () => useTrip.setState({ sheet: null, expenseMode: 'new' })
+  const close = () => useTrip.setState({ sheet: null, expenseMode: 'new', expenseDraft: null })
   const saveExpense = useTrip((s) => s.saveExpense)
   const toast = useTrip((s) => s.showToast)
   const poll = useTrip((s) => s.poll)
@@ -17,20 +17,36 @@ export default function AddExpense({ open }: { open: boolean }) {
   const mode = useTrip((s) => s.expenseMode)
   const saved = useTrip((s) => s.expenseItems)
   const savedPeople = useTrip((s) => s.expensePeople)
+  const draft = useTrip((s) => s.expenseDraft)
+  const inviteFromExpense = useTrip((s) => s.inviteFromExpense)
   const crew = useMemo(() => members({ renAdded }), [renAdded])
   const place = poll?.winner ? restaurantById(poll.winner).name : 'Dinner'
   const editing = mode === 'edit' && !!saved
-  // People who joined after the bill was logged: they start off every item until someone taps them in.
-  const newcomers = editing ? crew.filter((p) => !savedPeople.includes(p)) : []
 
   const [items, setItems] = useState<ExpenseItem[]>([])
+  const [base, setBase] = useState<PersonId[]>(crew)
   const [openItem, setOpenItem] = useState<string | null>(null)
+  const [showErrors, setShowErrors] = useState(false)
+  // People who joined after these items were set up: they start off every item until someone taps them in.
+  const newcomers = crew.filter((p) => !base.includes(p))
   useEffect(() => {
     if (!open) return
-    setItems(editing ? saved!.map((i) => ({ ...i })) : dinnerItems.map((i) => ({ ...i, who: crew })))
-    setOpenItem(editing && newcomers.length ? 'all' : null)
+    const people = draft?.people ?? (editing ? savedPeople : crew)
+    setItems(draft ? draft.items.map((i) => ({ ...i })) : editing ? saved!.map((i) => ({ ...i })) : dinnerItems.map((i) => ({ ...i, who: crew })))
+    setBase(people)
+    setShowErrors(false)
+    setOpenItem(crew.some((p) => !people.includes(p)) ? 'all' : null)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
+  const itemError = (i: ExpenseItem) => !!i.custom && (!i.label.trim() || !(i.amount > 0))
+  const save = () => {
+    if (items.some(itemError)) {
+      setShowErrors(true)
+      toast('Each expense item needs a name and an amount', 'neutral')
+      return
+    }
+    saveExpense(shares, Math.round(total * 100) / 100, items)
+  }
 
   const total = items.reduce((a, i) => a + (i.amount || 0), 0)
   const shares = useMemo(() => {
@@ -67,7 +83,7 @@ export default function AddExpense({ open }: { open: boolean }) {
       onClose={close}
       title={editing ? 'Edit expense' : 'Add expense'}
       footer={
-        <Button onClick={() => saveExpense(shares, Math.round(total * 100) / 100, items)} disabled={invalid || total <= 0}>
+        <Button onClick={save} disabled={invalid || total <= 0}>
           {invalid ? 'Every item needs someone' : editing ? 'Save changes' : 'Save expense'}
         </Button>
       }
@@ -76,7 +92,7 @@ export default function AddExpense({ open }: { open: boolean }) {
         <div className="mb-3 flex items-start gap-2.5 rounded-2xl bg-orange/10 p-3">
           <UserPlus size={18} className="mt-0.5 shrink-0 text-orange" />
           <div className="text-foot">
-            <span className="font-semibold text-orange">{names(newcomers)} joined after this was logged.</span> Tap {newcomers.length > 1 ? 'them' : 'him'} on the items {newcomers.length > 1 ? 'they' : 'he'} shared.
+            <span className="font-semibold text-orange">{names(newcomers)} {editing ? 'joined after this was logged' : 'just joined the dinner'}.</span> Tap {newcomers.length > 1 ? 'them' : 'him'} on the items {newcomers.length > 1 ? 'they' : 'he'} shared.
           </div>
         </div>
       )}
@@ -106,6 +122,7 @@ export default function AddExpense({ open }: { open: boolean }) {
             const out = crew.filter((p) => !item.who.includes(p))
             const empty = item.who.length === 0
             const expanded = isOpen(item.id)
+            const bad = showErrors && itemError(item)
             return (
               <motion.div
                 layout
@@ -113,7 +130,7 @@ export default function AddExpense({ open }: { open: boolean }) {
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, height: 0 }}
-                className={cx('rounded-2xl px-3.5 py-3 ring-2 transition-colors', empty && item.amount ? 'bg-white ring-red' : expanded ? 'bg-white ring-blue' : 'bg-gray-6 ring-transparent')}
+                className={cx('rounded-2xl px-3.5 py-3 ring-2 transition-colors', bad || (empty && item.amount) ? 'bg-white ring-red' : expanded ? 'bg-white ring-blue' : 'bg-gray-6 ring-transparent')}
               >
                 {item.custom ? (
                   <div className="flex items-center gap-2">
@@ -131,12 +148,24 @@ export default function AddExpense({ open }: { open: boolean }) {
                     </button>
                   </div>
                 ) : null}
+                {bad && <div className="mt-1 text-foot font-semibold text-red">Add a name and an amount</div>}
                 <button data-item={item.id} onClick={() => setOpenItem(expanded ? null : item.id)} className="flex w-full items-center gap-2 text-left">
                   <div className="min-w-0 flex-1">
                     {!item.custom && (
-                      <div className="flex items-baseline">
+                      <div className="flex items-baseline gap-2">
                         <span className="flex-1 text-headline">{item.label}</span>
                         <span className="text-headline">€{item.amount}</span>
+                        <span
+                          role="button"
+                          aria-label="Remove item"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            toast('The dinner items stay in this demo. You can delete items you add.', 'neutral')
+                          }}
+                          className="self-center text-label-3"
+                        >
+                          <Trash2 size={16} />
+                        </span>
                       </div>
                     )}
                     <div className={cx('text-foot', empty && item.amount ? 'font-semibold text-red' : 'text-label-2')}>
@@ -179,9 +208,16 @@ export default function AddExpense({ open }: { open: boolean }) {
         </AnimatePresence>
       </div>
 
-      <button onClick={addItem} className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-2xl border-[1.5px] border-dashed border-blue/60 py-2.5 text-sub font-semibold text-blue">
-        <Plus size={17} /> Add expense item
-      </button>
+      <div className="mt-2 flex gap-2">
+        <button onClick={addItem} className="flex flex-1 items-center justify-center gap-1.5 rounded-2xl border-[1.5px] border-dashed border-blue/60 py-2.5 text-sub font-semibold text-blue">
+          <Plus size={17} /> Add item
+        </button>
+        {!renAdded && (
+          <button onClick={() => inviteFromExpense({ items, people: base })} className="flex flex-1 items-center justify-center gap-1.5 rounded-2xl border-[1.5px] border-dashed border-orange/70 py-2.5 text-sub font-semibold text-orange">
+            <UserPlus size={17} /> Invite to dinner
+          </button>
+        )}
+      </div>
 
       <div className="mt-3 flex items-center gap-3 px-1">
         {groups.map(([amt, ps]) => (

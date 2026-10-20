@@ -4,6 +4,7 @@ import { ReactNode, useEffect, useState } from 'react'
 import { people } from './data'
 import { Avatar } from './components/ui'
 import AddEvent from './screens/AddEvent'
+import EventPicker from './screens/EventPicker'
 import AddExpense from './screens/AddExpense'
 import AddPeople from './screens/AddPeople'
 import Home from './screens/Home'
@@ -134,6 +135,7 @@ function Phone() {
         </motion.div>
       </AnimatePresence>
       <AddEvent open={sheet === 'addEvent'} />
+      <EventPicker open={sheet === 'pickEvent'} />
       <AddPeople open={sheet === 'addPeople'} />
       <NewPoll open={sheet === 'newPoll'} />
       <AddExpense open={sheet === 'addExpense'} />

@@ -22,13 +22,11 @@ export default function Hub() {
 
   const bottom =
     s.hubTab === 'plan' ? (
-      <div className="flex gap-2">
-        <QuickAction icon={<CalendarPlus size={18} />} label="Event" primary={!s.dinnerAdded} onClick={() => (s.dinnerAdded ? s.showToast('This demo adds one event to tonight', 'neutral') : s.openSheet('addEvent'))} />
-        <QuickAction icon={<Vote size={18} />} label="Poll" primary={s.dinnerAdded && !s.poll} onClick={() => (s.poll?.status === 'live' ? s.go('poll') : s.openSheet('newPoll'))} />
-        <QuickAction icon={<Receipt size={18} />} label="Expense" onClick={() => (s.dinnerShares ? s.editExpense() : s.openSheet('addExpense'))} />
-      </div>
+      <Button onClick={() => (s.dinnerAdded ? s.showToast('This demo adds one event to tonight', 'neutral') : s.openSheet('addEvent'))} kind={s.dinnerAdded ? 'secondary' : 'primary'}>
+        <CalendarPlus size={20} /> Add an event
+      </Button>
     ) : s.hubTab === 'polls' ? (
-      <Button onClick={() => (s.poll?.status === 'live' ? s.go('poll') : s.openSheet('newPoll'))}>
+      <Button onClick={() => (s.poll?.status === 'live' ? s.go('poll') : s.pickEvent('poll'))}>
         <Plus size={20} /> {s.poll?.status === 'live' ? 'Open live poll' : 'New poll'}
       </Button>
     ) : s.dinnerShares ? (
@@ -36,7 +34,7 @@ export default function Hub() {
         {s.settleRequested ? 'Request sent · waiting for transfers' : 'Ask everyone to settle'}
       </Button>
     ) : (
-      <Button onClick={() => s.openSheet('addExpense')}>
+      <Button onClick={() => s.pickEvent('expense')}>
         <Plus size={20} /> Add expense
       </Button>
     )

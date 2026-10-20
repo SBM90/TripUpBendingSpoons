@@ -25,7 +25,7 @@ function Chip({ on, children, onClick }: { on: boolean; children: React.ReactNod
 }
 
 export default function AddEvent({ open }: { open: boolean }) {
-  const close = () => useTrip.getState().openSheet(null)
+  const close = () => useTrip.setState({ sheet: null, afterEvent: null })
   const addDinner = useTrip((s) => s.addDinner)
   const toast = useTrip((s) => s.showToast)
   const [name, setName] = useState('Final dinner')
@@ -42,7 +42,7 @@ export default function AddEvent({ open }: { open: boolean }) {
   }, [open])
 
   return (
-    <Sheet open={open} onClose={close} title="Add to the plan" footer={<Button onClick={() => addDinner({ name, day, time })}>Add to {day.toLowerCase()}</Button>}>
+    <Sheet open={open} onClose={close} title="Add to the plan" footer={<Button onClick={() => addDinner({ name: name.trim(), day, time })} disabled={!name.trim()}>{name.trim() ? `Add to ${day.toLowerCase()}` : 'Give the event a name'}</Button>}>
       <label className="block rounded-xl bg-fill3 px-3.5 py-2.5">
         <span className="block text-cap text-label-2">Event name</span>
         <input value={name} onChange={(e) => setName(e.target.value)} className="w-full bg-transparent text-body outline-none" />
@@ -56,7 +56,7 @@ export default function AddEvent({ open }: { open: boolean }) {
             <motion.button
               key={k.id}
               whileTap={{ scale: 0.94 }}
-              onClick={() => setKind(k.id)}
+              onClick={() => (k.id === 'food' ? setKind(k.id) : toast('This demo plans a dinner, so other event types aren’t available', 'neutral'))}
               className={cx('flex flex-col items-center gap-1 rounded-xl py-2.5 text-foot font-semibold ring-2', on ? 'bg-blue/10 text-blue ring-blue' : 'bg-gray-6 text-label-2 ring-transparent')}
             >
               <Icon size={20} />
@@ -72,11 +72,11 @@ export default function AddEvent({ open }: { open: boolean }) {
       </div>
       <div className="flex flex-wrap gap-1.5">
         {days.map((d) => (
-          <Chip key={d.id} on={day === d.id} onClick={() => setDay(d.id)}>
+          <Chip key={d.id} on={day === d.id} onClick={() => (d.id === 'Tonight' ? setDay(d.id) : toast('Other days aren’t part of this demo: the dinner is tonight', 'neutral'))}>
             {d.label}
           </Chip>
         ))}
-        <Chip on={false} onClick={() => toast('The date picker is not part of this demo', 'neutral')}>
+        <Chip on={false} onClick={() => toast('Custom dates aren’t part of this demo: the dinner is tonight', 'neutral')}>
           Pick date
         </Chip>
       </div>

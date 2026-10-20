@@ -14,6 +14,8 @@ export default function NewPoll({ open }: { open: boolean }) {
   const [addToPlan, setAddToPlan] = useState(true)
   const [editing, setEditing] = useState(false)
   const closeAfter = useTrip((s) => s.closeAfter)
+  const dinnerName = useTrip((s) => s.dinnerName)
+  const dinnerTime = useTrip((s) => s.dinnerTime)
   const setCloseAfter = useTrip((s) => s.setCloseAfter)
 
   const toggle = (id: string) => setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]))
@@ -30,6 +32,11 @@ export default function NewPoll({ open }: { open: boolean }) {
         </Button>
       }
     >
+      <div className="mb-3 flex items-center gap-2 rounded-xl bg-orange/10 px-3 py-2 text-foot">
+        <span className="font-semibold text-orange">For</span>
+        <span className="font-semibold">{dinnerName} · {dinnerTime}</span>
+        <span className="text-label-2">· the winner fills this event</span>
+      </div>
       <div className="rounded-xl bg-fill3 px-3.5 py-3">
         <div className="text-cap text-label-2">Question</div>
         <div className="text-body">Where should we eat tonight?</div>

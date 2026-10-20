@@ -36,6 +36,7 @@ console.log('2 poll without Ren'); await tap('Start a poll for the place'); awai
 console.log('3 bill for 5'); await tap('Add expense'); await page.evaluate(() => document.querySelector('[data-item="wine"]').click()); await wait(500)
 await page.evaluate(() => [...document.querySelectorAll('[data-chip="nic"]')].at(-1).click()); await wait(300); await expect('€32.40'); await tap('Save expense'); await expect('Dinner added')
 console.log('4 invite Ren late'); await tap('Plan', true); await tap('Invite a guest'); await tap('Invite Ren to the dinner'); await expect('he’s not on the dinner bill yet'); await expect('Ren isn’t on the dinner bill yet')
+await tap('Money', true); await tap('Ask everyone to settle'); await expect('Add Ren to the dinner bill before settling up')
 console.log('5 update bill'); await tap('Update', true); await expect('Edit expense'); await expect('Ren joined after this was logged'); await expect('Nic and Ren not in')
 await page.evaluate(() => [...document.querySelectorAll('[data-chip="ren"]')][0].click()); await wait(400); await expect('Nic and Ren not in'); await expect('€27 each'); await tap('Save changes'); await expect('Dinner updated'); await expect('Ren pays Maya'); await expect('€171')
 if (errors.length) { console.log('ERRORS', errors); process.exitCode = 1 }

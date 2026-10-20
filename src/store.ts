@@ -10,7 +10,8 @@ import {
 } from './data'
 
 export type Screen = 'home' | 'hub' | 'poll' | 'squared' | 'nicLock' | 'nicApp'
-export type Sheet = null | 'addEvent' | 'addPeople' | 'newPoll' | 'addExpense' | 'pay'
+export type Sheet = null | 'addEvent' | 'addPeople' | 'newPoll' | 'addExpense' | 'pay' | 'pickEvent'
+export type PickFor = 'poll' | 'expense'
 export type InviteTarget = 'dinner' | 'trip'
 export type HubTab = 'plan' | 'polls' | 'money'
 
@@ -76,6 +77,11 @@ interface State {
   expensePeople: PersonId[]
   expenseMode: 'new' | 'edit'
   needsExpenseUpdate: boolean
+  // Polls and expenses always belong to an event: these track the picker and what to open after it.
+  pickFor: PickFor
+  afterEvent: PickFor | null
+  expenseDraft: { items: ExpenseItem[]; people: PersonId[] } | null
+  returnToExpense: boolean
   settleRequested: boolean
   paid: PersonId[]
   viewer: PersonId
@@ -99,6 +105,8 @@ interface State {
   closePoll: () => void
   saveExpense: (shares: Partial<Record<PersonId, number>>, total: number, items: ExpenseItem[]) => void
   editExpense: () => void
+  pickEvent: (forWhat: PickFor) => void
+  inviteFromExpense: (draft: { items: ExpenseItem[]; people: PersonId[] }) => void
   askSettle: () => void
   openPush: () => void
   pay: () => void
@@ -168,6 +176,10 @@ const initial = {
   expensePeople: [] as PersonId[],
   expenseMode: 'new' as 'new' | 'edit',
   needsExpenseUpdate: false,
+  pickFor: 'poll' as PickFor,
+  afterEvent: null as PickFor | null,
+  expenseDraft: null as { items: ExpenseItem[]; people: PersonId[] } | null,
+  returnToExpense: false,
   settleRequested: false,
   paid: [] as PersonId[],
   viewer: ME as PersonId,
@@ -192,9 +204,16 @@ export const useTrip = create<State>((set, get) => ({
   },
 
   addDinner: (e) => {
-    set({ dinnerAdded: true, sheet: null, highlightDinner: true, ...(e ? { dinnerName: e.name || 'Final dinner', dinnerDay: e.day, dinnerTime: e.time } : {}) })
+    const next = get().afterEvent
+    set({ dinnerAdded: true, sheet: null, highlightDinner: true, afterEvent: null, ...(e ? { dinnerName: e.name || 'Final dinner', dinnerDay: e.day, dinnerTime: e.time } : {}) })
     get().showToast(`${get().dinnerName} added to ${get().dinnerDay.toLowerCase()}`)
+    // Came here from "New poll" with no event yet: carry on to the poll for the new event.
+    if (next === 'poll') later(500, () => set({ sheet: 'newPoll' }))
   },
+
+  pickEvent: (pickFor) => set({ pickFor, sheet: 'pickEvent' }),
+
+  inviteFromExpense: (draft) => set({ expenseDraft: draft, returnToExpense: true, inviteTarget: 'dinner', sheet: 'addPeople' }),
 
   setCloseAfter: (closeAfter) => set({ closeAfter }),
 
@@ -214,13 +233,17 @@ export const useTrip = create<State>((set, get) => ({
     const scope = get().inviteTarget
     // If the dinner bill already exists, Ren isn't on it yet: flag it so the app can prompt an update.
     const late = !!get().dinnerShares
-    set({ renAdded: true, renScope: scope, sheet: null, highlightDinner: scope === 'dinner' && !late, needsExpenseUpdate: late })
+    const back = get().returnToExpense
+    set({ renAdded: true, renScope: scope, sheet: back ? 'addExpense' : null, returnToExpense: false, highlightDinner: scope === 'dinner' && !late && !back, needsExpenseUpdate: late })
+    if (back) {
+      get().showToast('Ren added · tap him on the items he shared', 'neutral')
+      return
+    }
     get().showToast(late ? 'Ren added · he’s not on the dinner bill yet' : scope === 'dinner' ? 'Ren invited to the final dinner only' : 'Ren added to the trip', late ? 'neutral' : 'success')
   },
 
   sendPoll: (options) => {
     set({
-      dinnerAdded: true,
       highlightDinner: false,
       poll: {
         question: 'Where should we eat tonight?',
@@ -274,13 +297,23 @@ export const useTrip = create<State>((set, get) => ({
 
   saveExpense: (shares, total, items) => {
     const editing = get().expenseMode === 'edit'
-    set({ dinnerShares: shares, dinnerTotal: total, expenseItems: items, expensePeople: members(get()), needsExpenseUpdate: false, expenseMode: 'new', sheet: null, hubTab: 'money', screen: 'hub', highlightDinner: false })
+    set({ dinnerShares: shares, dinnerTotal: total, expenseItems: items, expensePeople: members(get()), needsExpenseUpdate: false, expenseMode: 'new', expenseDraft: null, sheet: null, hubTab: 'money', screen: 'hub', highlightDinner: false })
     get().showToast(editing ? 'Dinner updated · balances recalculated' : 'Dinner added · balances updated')
   },
 
-  editExpense: () => set({ expenseMode: 'edit', sheet: 'addExpense' }),
+  editExpense: () => {
+    if (get().settleRequested) {
+      get().showToast('Settling has started, so this bill is locked', 'neutral')
+      return
+    }
+    set({ expenseMode: 'edit', sheet: 'addExpense' })
+  },
 
   askSettle: () => {
+    if (get().needsExpenseUpdate) {
+      get().showToast('Add Ren to the dinner bill before settling up', 'neutral')
+      return
+    }
     set({ settleRequested: true })
     const debtors = simplify(balances(get())).map((t) => people[t.from].name)
     get().showToast(`Sent to ${debtors.slice(0, -1).join(', ')} and ${debtors.slice(-1)}`, 'neutral')

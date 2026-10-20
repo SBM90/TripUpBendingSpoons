@@ -5,7 +5,7 @@ import { InviteTarget, useTrip } from '../store'
 import { Avatar, Button, Card, Check, Row, Sheet } from '../components/ui'
 
 export default function AddPeople({ open }: { open: boolean }) {
-  const close = () => useTrip.getState().openSheet(null)
+  const close = () => (useTrip.getState().returnToExpense ? useTrip.setState({ sheet: 'addExpense', returnToExpense: false }) : useTrip.setState({ sheet: null }))
   const addRen = useTrip((s) => s.addRen)
   const renAdded = useTrip((s) => s.renAdded)
   const target = useTrip((s) => s.inviteTarget)
