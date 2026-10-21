@@ -14,6 +14,7 @@ import NewPoll from './screens/NewPoll'
 import NicLock from './screens/NicLock'
 import NicApp from './screens/NicApp'
 import Pay from './screens/Pay'
+import Recap from './screens/Recap'
 import Squared from './screens/Squared'
 import { useTrip } from './store'
 
@@ -140,6 +141,7 @@ function Phone() {
       <NewPoll open={sheet === 'newPoll'} />
       <AddExpense open={sheet === 'addExpense'} />
       <Pay open={sheet === 'pay'} />
+      <Recap open={sheet === 'recap'} />
       <Toasts />
       <PushBanner />
       <ViewerPill />
@@ -155,10 +157,10 @@ function ViewerPill() {
   const back = () => useTrip.getState().switchPhone('ari', { sheet: null, screen: 'hub', hubTab: 'money' }, 'Back on Ari’s phone', paid ? 'Nic has paid.' : 'Nic hasn’t paid yet.')
   return (
     <div className="pointer-events-none absolute inset-x-0 z-[65] flex justify-center" style={{ top: 'calc(var(--safe-top) + 2px)' }}>
-      <div className="pointer-events-auto flex items-center gap-1.5 rounded-full bg-indigo py-1 pl-1 pr-1 text-cap font-semibold text-white shadow-lg">
+      <div className="pointer-events-auto flex items-center gap-1.5 rounded-full bg-indigo py-1 pl-1 pr-1 text-foot font-semibold text-white shadow-lg">
         <Avatar id={viewer} size={20} ring={false} />
         {people[viewer].name}’s phone
-        <button onClick={back} className="ml-1 rounded-full bg-white/20 px-2 py-0.5">Back to Ari</button>
+        <button onClick={back} className="ml-1 min-h-[32px] rounded-full bg-white/25 px-3">Back to Ari</button>
       </div>
     </div>
   )

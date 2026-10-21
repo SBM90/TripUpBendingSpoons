@@ -103,7 +103,7 @@ export default function AddExpense({ open }: { open: boolean }) {
         </motion.div>
         <div className="mt-0.5 text-foot text-label-2">
           {place} · paid by Ari ·{' '}
-          <button onClick={() => toast('Changing the payer is not part of this demo', 'neutral')} className="font-semibold text-blue">
+          <button onClick={() => toast('Changing the payer is not part of this demo', 'neutral')} className="-my-3 px-1 py-3 font-semibold text-blue">
             Change
           </button>
         </div>

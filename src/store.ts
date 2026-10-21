@@ -10,7 +10,7 @@ import {
 } from './data'
 
 export type Screen = 'home' | 'hub' | 'poll' | 'squared' | 'nicLock' | 'nicApp'
-export type Sheet = null | 'addEvent' | 'addPeople' | 'newPoll' | 'addExpense' | 'pay' | 'pickEvent'
+export type Sheet = null | 'addEvent' | 'addPeople' | 'newPoll' | 'addExpense' | 'pay' | 'pickEvent' | 'recap'
 export type PickFor = 'poll' | 'expense'
 export type InviteTarget = 'dinner' | 'trip'
 export type HubTab = 'plan' | 'polls' | 'money'

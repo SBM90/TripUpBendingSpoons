@@ -14,7 +14,7 @@ export default function Squared() {
     <Screen
       bottom={
         <div className="space-y-2.5">
-          <Button kind="secondary" onClick={() => s.showToast('Recap link copied', 'neutral')}>Share trip recap</Button>
+          <Button kind="secondary" onClick={() => s.openSheet('recap')}>Share trip recap</Button>
           <Button onClick={() => s.reset()}>Plan the next trip</Button>
         </div>
       }

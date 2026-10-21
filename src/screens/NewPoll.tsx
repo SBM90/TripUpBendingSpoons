@@ -44,7 +44,7 @@ export default function NewPoll({ open }: { open: boolean }) {
 
       <div className="mb-2 mt-4 flex items-center">
         <span className="flex-1 text-foot font-semibold text-label-2">Options · nearby, open now</span>
-        <button onClick={() => toast('Search is not part of this demo', 'neutral')} className="text-foot font-semibold text-blue">Search</button>
+        <button onClick={() => toast('Search is not part of this demo', 'neutral')} className="-my-3 px-1 py-3 text-foot font-semibold text-blue">Search</button>
       </div>
       <div className="space-y-2.5">
         {restaurants.map((r) => (

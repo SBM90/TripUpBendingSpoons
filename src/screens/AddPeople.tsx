@@ -82,7 +82,7 @@ export default function AddPeople({ open }: { open: boolean }) {
         <Row title="The whole group" sub="Sees every plan, poll and expense" trail={<Check on={!dinner} />} onClick={() => setScope('trip')} last />
       </Card>
 
-      <button onClick={() => toast('Invite link copied', 'neutral')} className="mt-3 flex items-center gap-1.5 px-1 text-foot font-semibold text-blue">
+      <button onClick={() => toast('Invite link copied', 'neutral')} className="mt-2 flex min-h-[44px] w-full items-center gap-1.5 px-1 text-foot font-semibold text-blue">
         <Link2 size={15} /> Or share an invite link · no account needed
       </button>
     </Sheet>

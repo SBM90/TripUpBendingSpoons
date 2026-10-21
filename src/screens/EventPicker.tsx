@@ -35,9 +35,10 @@ export default function EventPicker({ open }: { open: boolean }) {
   return (
     <Sheet open={open} onClose={close} title={forPoll ? 'New poll for…' : 'Add expense to…'}>
       <p className="mb-3 text-foot text-label-2">{forPoll ? 'Every poll belongs to an event, so the winner lands in the right slot.' : 'Every expense belongs to an event, so the right people share it.'}</p>
+      <div className="mb-2 flex items-center gap-2 px-1 text-foot text-label-3">
+        <Check size={14} /> Belém Tower and LX Factory already happened
+      </div>
       <div className="space-y-2">
-        <Option icon={<Check size={18} />} title="Belém Tower · 10:00" sub="Already happened" muted onClick={() => s.showToast('This event is over', 'neutral')} />
-        <Option icon={<Check size={18} />} title="LX Factory · 15:00" sub="Already happened" muted onClick={() => s.showToast('This event is over', 'neutral')} />
         {s.dinnerAdded && <Option icon={<Utensils size={18} />} tint="bg-orange" title={`${winner ? winner.name : s.dinnerName} · ${s.dinnerTime}`} sub={dinnerSub} onClick={pickDinner} highlight />}
         <Option icon={<GlassWater size={18} />} tint="bg-indigo" title="Bairro Alto drinks · 23:30" sub="Optional" onClick={() => s.showToast(`This demo runs the ${forPoll ? 'poll' : 'bill'} for the dinner`, 'neutral')} />
       </div>

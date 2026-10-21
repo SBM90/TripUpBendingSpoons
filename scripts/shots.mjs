@@ -49,6 +49,8 @@ const states = {
   '14-dinner-2030': { screen: 'hub', dinnerAdded: true, dinnerTime: '20:30', renAdded: true },
   '15-picker': { screen: 'hub', hubTab: 'polls', sheet: 'pickEvent', pickFor: 'poll' },
   '16-picker-expense': { screen: 'hub', hubTab: 'money', sheet: 'pickEvent', pickFor: 'expense', dinnerAdded: true },
+  '17-recap': { screen: 'squared', dinnerAdded: true, renAdded: true, poll: poll(final, 'closed', 'taberna'), dinnerShares: wine, dinnerTotal: total, settleRequested: true, paid: ['nic', 'leo', 'sam', 'ren'], sheet: 'recap' },
+  '18-settling': { screen: 'hub', hubTab: 'money', dinnerAdded: true, renAdded: true, poll: poll(final, 'closed', 'taberna'), dinnerShares: wine, dinnerTotal: total, settleRequested: true, paid: ['nic', 'leo'] },
   '10-squared': { screen: 'squared', dinnerAdded: true, renAdded: true, poll: poll(final, 'closed', 'taberna'), dinnerShares: wine, dinnerTotal: total, settleRequested: true, paid: ['nic', 'leo', 'sam', 'ren'] },
 }
 

@@ -157,6 +157,21 @@ function LateGuestBanner() {
   )
 }
 
+// Goal-gradient: shows how close the group is to being squared up.
+function SettleProgress({ done, total }: { done: number; total: number }) {
+  return (
+    <div className="mb-2.5 px-1">
+      <div className="mb-1.5 flex text-foot">
+        <span className="flex-1 font-semibold">{done === total ? 'Everyone has paid' : `${done} of ${total} paid`}</span>
+        <span className="text-label-2">{done === total ? 'All squared up' : `${total - done} to go`}</span>
+      </div>
+      <div className="h-2 overflow-hidden rounded-full bg-gray-5">
+        <motion.div className="h-full rounded-full bg-green" initial={false} animate={{ width: `${Math.max(4, (done / total) * 100)}%` }} transition={{ type: 'spring', stiffness: 120, damping: 20 }} />
+      </div>
+    </div>
+  )
+}
+
 function Time({ t }: { t: string }) {
   return <span className="w-11 text-sub font-semibold text-label-2">{t}</span>
 }
@@ -369,6 +384,7 @@ function MoneyTab() {
       {transfers.length > 0 && (
         <>
           <SectionTitle right={<Chip tone="blue">{UNSIMPLIFIED_TRANSFERS} → {transfers.length} transfers</Chip>}>Simplest way to settle</SectionTitle>
+          {s.settleRequested && <SettleProgress done={transfers.filter((t) => s.paid.includes(t.from)).length} total={transfers.length} />}
           <Card>
             {transfers.map((t, i) => {
               const done = s.paid.includes(t.from)
@@ -393,7 +409,7 @@ function MoneyTab() {
         </>
       )}
 
-      <button onClick={() => setShowAll((v) => !v)} className="mt-2 px-1 text-foot font-semibold text-blue">
+      <button onClick={() => setShowAll((v) => !v)} className="mt-1 flex min-h-[44px] items-center px-1 text-foot font-semibold text-blue">
         {showAll ? 'Hide everyone’s balance' : 'See everyone’s balance'}
       </button>
       {showAll && (
